@@ -1,0 +1,7 @@
+name: pool-permission-manager
+version: 1.0.0
+source: contracts
+packages:
+  - path: contracts/PoolPermissionManager.sol
+    contractName: PoolPermissionManager
+customDescription: Pool Permission Manager Token Artifacts and ABIs
