@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.7;
 
+import { NonTransparentProxied } from "../modules/ntp/contracts/NonTransparentProxied.sol";
+
 // TODO: Warden actors need adding
-// TODO: Make NTP
 // TODO: Should we have a separate proxy storage contract?
 // TODO: Interface / Natspec
-contract PoolPermissionManager {
+contract PoolPermissionManager is NonTransparentProxied {
 
     /**************************************************************************************************************************************/
     /*** Structs                                                                                                                        ***/
