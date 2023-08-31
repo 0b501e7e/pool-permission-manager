@@ -3,69 +3,70 @@ pragma solidity ^0.8.7;
 
 import { NonTransparentProxied } from "../modules/ntp/contracts/NonTransparentProxied.sol";
 
-// TODO: Warden actors need adding
-// TODO: Should we have a separate proxy storage contract?
+import { IGlobalsLike } from "./interfaces/Interfaces.sol";
+
+import { PoolPermissionManagerStorage } from "./PoolPermissionManagerStorage.sol";
+
 // TODO: Interface / Natspec
-contract PoolPermissionManager is NonTransparentProxied {
+contract PoolPermissionManager is NonTransparentProxied, PoolPermissionManagerStorage {
 
     /**************************************************************************************************************************************/
-    /*** Structs                                                                                                                        ***/
+    /*** Modifiers                                                                                                                      ***/
     /**************************************************************************************************************************************/
 
-    struct PoolConfig {
-        bool isGlobalAllowList;
-        bool isFunctionAllowList;
+    modifier onlyGovernor() {
+        require(msg.sender == admin(), "PPM:NOT_GOV");
+        _;
     }
 
-    /**************************************************************************************************************************************/
-    /*** Storage                                                                                                                        ***/
-    /**************************************************************************************************************************************/
+    modifier onlyPermissionsAdmin() {
+        require(permissionsAdmins[msg.sender], "PPM:NOT_PPM_ADMIN");
+        _;
+    }
 
-    mapping(address => uint256) public lenderBitmaps;
-    mapping(address => uint256) public poolBitmaps;
+    // TODO: Add operation admin in the future.
+    modifier onlyPoolDelegate(address poolManager) {
+        ( address ownedPoolManager, bool isPoolDelegate ) = IGlobalsLike(globals).poolDelegates(msg.sender);
 
-    mapping(address => PoolConfig) public poolConfigs;
-
-    mapping(address => mapping(address => bool)) public poolAllowList;
-
-    mapping(address => mapping(bytes32 => uint256)) public poolFunctionBitmaps;
+        require(isPoolDelegate && ownedPoolManager == poolManager, "PPM:NOT_PD");
+        _;
+    }
 
     /**************************************************************************************************************************************/
     /*** Setters                                                                                                                        ***/
     /**************************************************************************************************************************************/
 
-    function setIsGlobalAllowList(address pool_, bool isGlobalAllowList_) external {
-        // TODO: Check caller ACL (Pool Delegate)
-        poolConfigs[pool_].isGlobalAllowList = isGlobalAllowList_;
+    function setIsGlobalAllowList(address poolManager_, bool isGlobalAllowList_) external onlyPoolDelegate(poolManager_) {
+        poolConfigs[poolManager_].isGlobalAllowList = isGlobalAllowList_;
     }
 
-    function setIsPoolFunctionAllowList(address pool_, bool isFunctionAllowList_) external {
-        // TODO: Check caller ACL (Pool Delegate)
+    function setIsPoolFunctionAllowList(address poolManager_, bool isFunctionAllowList_) external onlyPoolDelegate(poolManager_) {
         // TODO: Require Global allow list to be set first / should we combine ?
-        poolConfigs[pool_].isFunctionAllowList = isFunctionAllowList_;
+        poolConfigs[poolManager_].isFunctionAllowList = isFunctionAllowList_;
     }
 
-    function setPoolAllowList(address pool_, address user_, bool isAllowed_) external {
-        // TODO: Check caller ACL (Pool Delegate)
-        // TODO: What validation should be done?
-        poolAllowList[pool_][user_] = isAllowed_;
+    function setPermissionsAdmin(address permissionAdmin_, bool isPermissionsAdmin_) external onlyGovernor {
+        permissionsAdmins[permissionAdmin_] = isPermissionsAdmin_;
     }
 
-    function setPoolBitmap(address pool_, uint256 bitmap_) external {
-        // TODO: Check caller ACL (Pool Delegate)
+    function setPoolAllowList(address poolManager_, address user_, bool isAllowed_) external onlyPoolDelegate(poolManager_) {
         // TODO: What validation should be done?
-        poolBitmaps[pool_] = bitmap_;
+        poolAllowList[poolManager_][user_] = isAllowed_;
     }
 
-    function setPoolFunctionBitmap(address pool_, bytes32 functionSig_, uint256 bitmap_) external {
-        // TODO: Check caller ACL (Pool Delegate)
+    function setPoolBitmap(address poolManager_, uint256 bitmap_) external onlyPoolDelegate(poolManager_) {
         // TODO: What validation should be done?
-        poolFunctionBitmaps[pool_][functionSig_] = bitmap_;
+        poolBitmaps[poolManager_] = bitmap_;
     }
 
-    function setLenderBitmap(address lender_, uint256 bitmap_) external {
-        // TODO: Check caller ACL (PPM Admin)
+    function setPoolFunctionBitmap(address poolManager_, bytes32 functionSig_, uint256 bitmap_) external onlyPoolDelegate(poolManager_) {
         // TODO: What validation should be done?
+        poolFunctionBitmaps[poolManager_][functionSig_] = bitmap_;
+    }
+
+    function setLenderBitmap(address lender_, uint256 bitmap_) external onlyPermissionsAdmin {
+        // TODO: What validation should be done?
+        // TODO: Should de governor be able to call it directly too?
         lenderBitmaps[lender_] = bitmap_;
     }
 
