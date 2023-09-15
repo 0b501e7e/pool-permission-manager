@@ -10,9 +10,9 @@ contract GlobalsMock {
 
     address public governor;
 
-    PoolDelegate poolDelegate_; 
+    PoolDelegate poolDelegate_;
 
-    function poolDelegates(address ) external view returns (address, bool) {
+    function poolDelegates(address) external view returns (address, bool) {
         return (poolDelegate_.ownedPoolManager, poolDelegate_.isPoolDelegate);
     }
 
@@ -24,5 +24,5 @@ contract GlobalsMock {
         poolDelegate_.ownedPoolManager = ownedPoolManager_;
         poolDelegate_.isPoolDelegate = isPoolDelegate_;
     }
-    
+
 }

@@ -29,17 +29,18 @@ contract PoolPermissionManagerInitializerTests is TestBase {
         poolPermissionManager = PoolPermissionManager(address(new NonTransparentProxy(admin, address(initializer))));
     }
 
-    function test_initializer_notAdmin() external {
-        vm.expectRevert("PPMI:I:NOT_ADMIN");
+    function test_initializer_notGovernor() external {
+        vm.expectRevert("PPMI:I:NOT_GOVERNOR");
         PoolPermissionManagerInitializer(address(poolPermissionManager)).initialize(implementation, address(globals));
     }
 
-    function test_initializer_variableSet() external {
+    function test_initializer_success() external {
         vm.prank(admin);
         PoolPermissionManagerInitializer(address(poolPermissionManager)).initialize(implementation, address(globals));
 
+        assertEq(poolPermissionManager.admin(),          address(admin));
         assertEq(poolPermissionManager.globals(),        address(globals));
-        assertEq(poolPermissionManager.implementation(), implementation);
+        assertEq(poolPermissionManager.implementation(), address(implementation));
     }
 
 }

@@ -6,11 +6,11 @@ import { NonTransparentProxied } from "../modules/ntp/contracts/NonTransparentPr
 import { PoolPermissionManagerStorage } from "./PoolPermissionManagerStorage.sol";
 
 contract PoolPermissionManagerInitializer is NonTransparentProxied, PoolPermissionManagerStorage {
-    
-    function initialize(address implementation_, address globals_) external {
-        require(msg.sender == admin(), "PPMI:I:NOT_ADMIN");
 
-        globals = globals_; 
+    function initialize(address implementation_, address globals_) external {
+        require(msg.sender == admin(), "PPMI:I:NOT_GOVERNOR");
+
+        globals = globals_;
 
         _setAddress(IMPLEMENTATION_SLOT, implementation_);
     }

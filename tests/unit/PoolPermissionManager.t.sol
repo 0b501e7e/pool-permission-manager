@@ -9,277 +9,572 @@ import { PoolPermissionManagerInitializer } from "../../contracts/PoolPermission
 import { GlobalsMock } from "../utils/Mocks.sol";
 import { TestBase }    from "../utils/TestBase.sol";
 
-contract PoolPermissionManagerTestsBase is TestBase {
+// TODO: Add checks for emitted events.
+contract PoolPermissionManagerTestBase is TestBase {
 
-    address admin            = makeAddr("admin");
-    address lender           = makeAddr("lender");
-    address poolManager      = makeAddr("poolManager");
-    address permissionsAdmin = makeAddr("permissionsAdmin");
+    address governor        = makeAddr("governor");
+    address lender          = makeAddr("lender");
+    address permissionAdmin = makeAddr("permissionAdmin");
+    address poolDelegate    = makeAddr("poolDelegate");
+    address poolManager     = makeAddr("poolManager");
 
-    address implementation;
-    address initializer;
+    address implementation = address(new PoolPermissionManager());
+    address initializer    = address(new PoolPermissionManagerInitializer());
+
+    bytes32 functionId = "P:deposit";
+
+    address[] lenders;
+    uint256[] bitmaps;
+    bool   [] booleans;
+    bytes32[] functionIds;
 
     GlobalsMock           globals;
-    PoolPermissionManager poolPermissionManager;
+    PoolPermissionManager ppm;
 
     function setUp() public virtual {
-        globals        = new GlobalsMock();
-        implementation = address(new PoolPermissionManager());
-        initializer    = address(new PoolPermissionManagerInitializer());
+        globals = new GlobalsMock();
 
-        poolPermissionManager = PoolPermissionManager(address(new NonTransparentProxy(admin, address(initializer))));
-
-        globals.__setGovernor(admin);
+        globals.__setGovernor(governor);
         globals.__setPoolDelegate(poolManager, true);
 
-        vm.startPrank(admin);
-        PoolPermissionManagerInitializer(address(poolPermissionManager)).initialize(implementation, address(globals));
-        poolPermissionManager.setPermissionsAdmin(permissionsAdmin, true);
+        ppm = PoolPermissionManager(address(new NonTransparentProxy(governor, address(initializer))));
+
+        vm.startPrank(governor);
+        PoolPermissionManagerInitializer(address(ppm)).initialize(implementation, address(globals));
+        ppm.setPermissionAdmin(permissionAdmin, true);
         vm.stopPrank();
+    }
+
+    function generateBitmap(uint8[2] memory indices_) internal pure returns (uint256 bitmap_) {
+        for (uint8 i = 0; i < indices_.length; i++) {
+            bitmap_ |= (1 << indices_[i]);
+        }
+    }
+
+    function generateBitmap(uint8[3] memory indices_) internal pure returns (uint256 bitmap_) {
+        for (uint8 i = 0; i < indices_.length; i++) {
+            bitmap_ |= (1 << indices_[i]);
+        }
     }
 
 }
 
-contract SetImplementationTests is PoolPermissionManagerTestsBase {
+contract SetImplementationTests is PoolPermissionManagerTestBase {
 
-    event ImplementationSet(address indexed implementation);
-
-    function test_setImplementation_notAdmin() external {
+    function test_setImplementation_unauthorized() external {
         vm.expectRevert("NTP:SI:NOT_ADMIN");
-        NonTransparentProxy(address(poolPermissionManager)).setImplementation(address(0x1));
+        NonTransparentProxy(address(ppm)).setImplementation(address(0x1));
     }
 
     function test_setImplementation_success() external {
         address newImplementation = address(new PoolPermissionManager());
 
-        vm.expectEmit();
-        emit ImplementationSet(newImplementation);
+        assertEq(ppm.implementation(), implementation);
 
-        vm.prank(admin);
-        NonTransparentProxy(address(poolPermissionManager)).setImplementation(newImplementation);
+        vm.prank(governor);
+        NonTransparentProxy(address(ppm)).setImplementation(newImplementation);
 
-        assertEq(poolPermissionManager.implementation(), newImplementation);
+        assertEq(ppm.implementation(), newImplementation);
     }
 
 }
 
-contract FallbackTests is PoolPermissionManagerTestsBase {
+contract FallbackTests is PoolPermissionManagerTestBase {
 
-    function test_fallback_noCodeOnImplementation() external {
+    function test_fallback_noCode() external {
         address newImplementation = makeAddr("notContract");
 
-        vm.prank(admin);
-        NonTransparentProxy(address(poolPermissionManager)).setImplementation(newImplementation);
+        vm.prank(governor);
+        NonTransparentProxy(address(ppm)).setImplementation(newImplementation);
 
         vm.expectRevert("NTP:F:NO_CODE_ON_IMPLEMENTATION");
-        poolPermissionManager.implementation();
+        ppm.implementation();
     }
 
 }
 
-contract SetIsGlobalAllowListTests is PoolPermissionManagerTestsBase {
+contract SetLenderBitmapsTests is PoolPermissionManagerTestBase {
 
-    function test_setGlobalAllowList_notPoolDelegate() public {
-        globals.__setPoolDelegate(poolManager, false);
-
-        vm.expectRevert("PPM:NOT_PD");
-        poolPermissionManager.setIsGlobalAllowList(poolManager, true);
-    }
-
-    function test_setGlobalAllowList_wrongPoolDelegate() public {
-        address otherPoolManager = makeAddr("otherPoolManager");
-
-        globals.__setPoolDelegate(otherPoolManager, true);
-
-        vm.expectRevert("PPM:NOT_PD");
-        poolPermissionManager.setIsGlobalAllowList(poolManager, true);
-    }
-
-    function test_setIsGlobalAllowList() public {
-        poolPermissionManager.setIsGlobalAllowList(poolManager, true);
-
-        ( bool isGlobalAllowList, ) = poolPermissionManager.poolConfigs(poolManager);
-
-        assertTrue(isGlobalAllowList);
-
-        poolPermissionManager.setIsGlobalAllowList(poolManager, false);
-
-        ( isGlobalAllowList, ) = poolPermissionManager.poolConfigs(poolManager);
-
-        assertTrue(!isGlobalAllowList);
-    }
-
-}
-
-contract SetIsPoolFunctionOnlyTests is PoolPermissionManagerTestsBase {
-
-    function test_setIsPoolFunctionAllowList_notPoolDelegate() public {
-        globals.__setPoolDelegate(poolManager, false);
-
-        vm.expectRevert("PPM:NOT_PD");
-        poolPermissionManager.setIsPoolFunctionAllowList(poolManager, true);
-    }
-
-    function test_setIsPoolFunctionAllowList_wrongPoolDelegate() public {
-        address otherPoolManager = makeAddr("otherPoolManager");
-
-        globals.__setPoolDelegate(otherPoolManager, true);
-
-        vm.expectRevert("PPM:NOT_PD");
-        poolPermissionManager.setIsPoolFunctionAllowList(poolManager, true);
-    }
-
-    function test_setIsPoolFunctionAllowList() public {
-        poolPermissionManager.setIsPoolFunctionAllowList(poolManager, true);
-
-        ( , bool isFunctionOnly ) = poolPermissionManager.poolConfigs(poolManager);
-
-        assertTrue(isFunctionOnly);
-
-        poolPermissionManager.setIsPoolFunctionAllowList(poolManager, false);
-
-        ( , isFunctionOnly ) = poolPermissionManager.poolConfigs(poolManager);
-
-        assertTrue(!isFunctionOnly);
-    }
-
-}
-
-contract SetPermissionsAdminTests is PoolPermissionManagerTestsBase {
-
-    function test_setPermissionsAdmin_notPoolDelegate() public {
-        globals.__setPoolDelegate(poolManager, false);
-
-        vm.expectRevert("PPM:NOT_GOV");
-        poolPermissionManager.setPermissionsAdmin(permissionsAdmin, true);
-    }
-
-    function test_setPermissionsAdmin() public {
-        address newPermissionsAdmin = makeAddr("newPermissionsAdmin");
-
-        vm.prank(admin);
-        poolPermissionManager.setPermissionsAdmin(newPermissionsAdmin, true);
-
-        assertTrue(poolPermissionManager.permissionsAdmins(newPermissionsAdmin));
-
-        vm.prank(admin);
-        poolPermissionManager.setPermissionsAdmin(newPermissionsAdmin, false);
-
-        assertTrue(!poolPermissionManager.permissionsAdmins(newPermissionsAdmin));
-    }
-
-}
-
-contract SetPoolAllowListTests is PoolPermissionManagerTestsBase {
-
-    function test_setPoolAllowList_notPoolDelegate() public {
-        globals.__setPoolDelegate(poolManager, false);
-
-        vm.expectRevert("PPM:NOT_PD");
-        poolPermissionManager.setPoolAllowList(poolManager, lender, true);
-    }
-
-    function test_setPoolAllowList_wrongPoolDelegate() public {
-        address otherPoolManager = makeAddr("otherPoolManager");
-
-        globals.__setPoolDelegate(otherPoolManager, true);
-
-        vm.expectRevert("PPM:NOT_PD");
-        poolPermissionManager.setPoolAllowList(poolManager, lender, true);
-    }
-
-    function test_setPoolAllowList() public {
-        poolPermissionManager.setPoolAllowList(poolManager, lender, true);
-
-        assertTrue(poolPermissionManager.poolAllowList(poolManager, lender));
-
-        poolPermissionManager.setPoolAllowList(poolManager, lender, false);
-
-        assertTrue(!poolPermissionManager.poolAllowList(poolManager, lender));
-    }
-
-}
-
-contract SetPoolBitmapTests is PoolPermissionManagerTestsBase {
-
-    function test_setPoolBitmap_notPoolDelegate() public {
-        globals.__setPoolDelegate(poolManager, false);
-
-        vm.expectRevert("PPM:NOT_PD");
-        poolPermissionManager.setPoolBitmap(poolManager, 1);
-    }
-
-    function test_setPoolBitmap_wrongPoolDelegate() public {
-        address otherPoolManager = makeAddr("otherPoolManager");
-
-        globals.__setPoolDelegate(otherPoolManager, true);
-
-        vm.expectRevert("PPM:NOT_PD");
-        poolPermissionManager.setPoolBitmap(poolManager, 1);
-    }
-
-    function test_setPoolBitmap() public {
-        poolPermissionManager.setPoolBitmap(poolManager, 1);
-
-        assertEq(poolPermissionManager.poolBitmaps(poolManager), 1);
-
-        poolPermissionManager.setPoolBitmap(poolManager, 0);
-
-        assertEq(poolPermissionManager.poolBitmaps(poolManager), 0);
-    }
-
-}
-
-contract SetPoolFunctionBitmapTests is PoolPermissionManagerTestsBase {
-
-    bytes32 functionSig = "P:deposit";
-
-    function test_setPoolFunctionBitmap_notPoolDelegate() public {
-        globals.__setPoolDelegate(poolManager, false);
-
-        vm.expectRevert("PPM:NOT_PD");
-        poolPermissionManager.setPoolFunctionBitmap(poolManager, functionSig, 1);
-    }
-
-    function test_setPoolFunctionBitmap_wrongPoolDelegate() public {
-        address otherPoolManager = makeAddr("otherPoolManager");
-
-        globals.__setPoolDelegate(otherPoolManager, true);
-
-        vm.expectRevert("PPM:NOT_PD");
-        poolPermissionManager.setPoolFunctionBitmap(poolManager, functionSig, 1);
-    }
-
-    function test_setPoolFunctionBitmap() public {
-
-        poolPermissionManager.setPoolFunctionBitmap(poolManager, functionSig, 1);
-
-        assertEq(poolPermissionManager.poolFunctionBitmaps(poolManager, functionSig), 1);
-
-        poolPermissionManager.setPoolFunctionBitmap(poolManager, functionSig, 0);
-
-        assertEq(poolPermissionManager.poolFunctionBitmaps(poolManager, functionSig), 0);
-    }
-
-}
-
-contract SetLenderBitmapTests is PoolPermissionManagerTestsBase {
-
-    function test_setLenderBitmap_notPermissionsAdmin() public {
+    function test_setLenderBitmaps_unauthorized() external {
         vm.expectRevert("PPM:NOT_PPM_ADMIN");
-        poolPermissionManager.setLenderBitmap(lender, 1);
+        ppm.setLenderBitmaps(lenders, bitmaps);
     }
 
-    function test_setLenderBitmap() public {
-        vm.prank(permissionsAdmin);
-        poolPermissionManager.setLenderBitmap(lender, 1);
+    function test_setLenderBitmaps_empty() external {
+        vm.prank(permissionAdmin);
+        vm.expectRevert("PPM:SLB:NO_LENDERS");
+        ppm.setLenderBitmaps(lenders, bitmaps);
+    }
 
-        assertEq(poolPermissionManager.lenderBitmaps(lender), 1);
+    function test_setLenderBitmaps_mismatch() external {
+        lenders.push(lender);
 
-        vm.prank(permissionsAdmin);
-        poolPermissionManager.setLenderBitmap(lender, 0);
+        vm.prank(permissionAdmin);
+        vm.expectRevert("PPM:SLB:LENGTH_MISMATCH");
+        ppm.setLenderBitmaps(lenders, bitmaps);
+    }
 
-        assertEq(poolPermissionManager.lenderBitmaps(lender), 0);
+    function test_setLenderBitmaps_success() external {
+        lenders.push(lender);
+        bitmaps.push(generateBitmap([0, 2]));
+
+        assertEq(ppm.lenderBitmaps(lender), 0);
+
+        vm.prank(permissionAdmin);
+        ppm.setLenderBitmaps(lenders, bitmaps);
+
+        assertEq(ppm.lenderBitmaps(lender), generateBitmap([0, 2]));
+    }
+
+    function test_setLenderBitmaps_batch() external {
+        lenders.push(address(1));
+        lenders.push(address(2));
+        lenders.push(address(3));
+
+        bitmaps.push(generateBitmap([0, 1]));
+        bitmaps.push(generateBitmap([1, 4]));
+        bitmaps.push(generateBitmap([0, 1, 2]));
+
+        assertEq(ppm.lenderBitmaps(address(1)), 0);
+        assertEq(ppm.lenderBitmaps(address(2)), 0);
+        assertEq(ppm.lenderBitmaps(address(3)), 0);
+
+        vm.prank(permissionAdmin);
+        ppm.setLenderBitmaps(lenders, bitmaps);
+
+        assertEq(ppm.lenderBitmaps(address(1)), generateBitmap([0, 1]));
+        assertEq(ppm.lenderBitmaps(address(2)), generateBitmap([1, 4]));
+        assertEq(ppm.lenderBitmaps(address(3)), generateBitmap([0, 1, 2]));
+    }
+
+}
+
+contract SetPermisionAdminTests is PoolPermissionManagerTestBase {
+
+    function test_setPermissionAdmin_unauthorized() external {
+        vm.expectRevert("PPM:NOT_GOVERNOR");
+        ppm.setPermissionAdmin(address(1), true);
+    }
+
+    function test_setPermissionAdmin_success() external {
+        assertEq(ppm.permissionAdmins(address(1)), false);
+
+        vm.prank(governor);
+        ppm.setPermissionAdmin(address(1), true);
+
+        assertEq(ppm.permissionAdmins(address(1)), true);
+    }
+
+}
+
+contract SetLenderAllowlistTests is PoolPermissionManagerTestBase {
+
+    function test_setLenderAllowlist_unauthorized() external {
+        globals.__setPoolDelegate(poolManager, false);
+
+        vm.expectRevert("PPM:NOT_PD");
+        ppm.setLenderAllowlist(poolManager, lenders, booleans);
+    }
+
+    function test_setLenderAllowlist_empty() external {
+        vm.prank(poolDelegate);
+        vm.expectRevert("PPM:SLA:NO_LENDERS");
+        ppm.setLenderAllowlist(poolManager, lenders, booleans);
+    }
+
+    function test_setLenderAllowlist_mismatch() external {
+        lenders.push(lender);
+
+        vm.prank(poolDelegate);
+        vm.expectRevert("PPM:SLA:LENGTH_MISMATCH");
+        ppm.setLenderAllowlist(poolManager, lenders, booleans);
+    }
+
+    function test_setLenderAllowlist_success() external {
+        lenders.push(lender);
+        booleans.push(true);
+
+        assertFalse(ppm.lenderAllowlist(poolManager, lender));
+
+        vm.prank(poolDelegate);
+        ppm.setLenderAllowlist(poolManager, lenders, booleans);
+
+        assertTrue(ppm.lenderAllowlist(poolManager, lender));
+    }
+
+    function test_setLenderAllowlist_batch() external {
+        lenders.push(address(1));
+        lenders.push(address(2));
+        lenders.push(address(3));
+
+        booleans.push(true);
+        booleans.push(false);
+        booleans.push(true);
+
+        assertEq(ppm.lenderAllowlist(poolManager, address(1)), false);
+        assertEq(ppm.lenderAllowlist(poolManager, address(2)), false);
+        assertEq(ppm.lenderAllowlist(poolManager, address(3)), false);
+
+        vm.prank(poolDelegate);
+        ppm.setLenderAllowlist(poolManager, lenders, booleans);
+
+        assertEq(ppm.lenderAllowlist(poolManager, address(1)), true);
+        assertEq(ppm.lenderAllowlist(poolManager, address(2)), false);
+        assertEq(ppm.lenderAllowlist(poolManager, address(3)), true);
+    }
+
+}
+
+contract SetPoolBitmapsTests is PoolPermissionManagerTestBase {
+
+    function test_setPoolBitmaps_unauthorized() external {
+        globals.__setPoolDelegate(poolManager, false);
+
+        vm.expectRevert("PPM:NOT_PD");
+        ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
+    }
+
+    function test_setPoolBitmaps_empty() external {
+        vm.prank(poolDelegate);
+        vm.expectRevert("PPM:SPB:NO_FUNCTIONS");
+        ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
+    }
+
+    function test_setPoolBitmaps_mismatch() external {
+        functionIds.push(functionId);
+
+        vm.prank(poolDelegate);
+        vm.expectRevert("PPM:SPB:LENGTH_MISMATCH");
+        ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
+    }
+
+    function test_setPoolBitmaps_success() external {
+        functionIds.push(functionId);
+        bitmaps.push(generateBitmap([0, 2]));
+
+        assertEq(ppm.poolBitmaps(poolManager, functionId), 0);
+
+        vm.prank(poolDelegate);
+        ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
+
+        assertEq(ppm.poolBitmaps(poolManager, functionId), generateBitmap([0, 2]));
+    }
+
+    function test_setPoolBitmaps_batch() external {
+        functionIds.push("P:deposit");
+        functionIds.push("P:mint");
+        functionIds.push("P:withdraw");
+        functionIds.push("P:redeem");
+
+        bitmaps.push(generateBitmap([0, 1]));
+        bitmaps.push(generateBitmap([0, 2]));
+        bitmaps.push(generateBitmap([2, 3, 4]));
+        bitmaps.push(generateBitmap([1, 2, 3]));
+
+        assertEq(ppm.poolBitmaps(poolManager, "P:deposit"),  0);
+        assertEq(ppm.poolBitmaps(poolManager, "P:mint"),     0);
+        assertEq(ppm.poolBitmaps(poolManager, "P:withdraw"), 0);
+        assertEq(ppm.poolBitmaps(poolManager, "P:redeem"),   0);
+
+        vm.prank(poolDelegate);
+        ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
+
+        assertEq(ppm.poolBitmaps(poolManager, "P:deposit"),  generateBitmap([0, 1]));
+        assertEq(ppm.poolBitmaps(poolManager, "P:mint"),     generateBitmap([0, 2]));
+        assertEq(ppm.poolBitmaps(poolManager, "P:withdraw"), generateBitmap([2, 3, 4]));
+        assertEq(ppm.poolBitmaps(poolManager, "P:redeem"),   generateBitmap([1, 2, 3]));
+    }
+
+}
+
+contract SetPoolPermissionLevelTests is PoolPermissionManagerTestBase {
+
+    function test_setPoolPermissionLevel_unauthorized() external {
+        globals.__setPoolDelegate(poolManager, false);
+
+        vm.expectRevert("PPM:NOT_PD");
+        ppm.setPoolPermissionLevel(poolManager, 3);
+    }
+
+    function test_setPoolPermissionLevel_public() external {
+        vm.prank(poolDelegate);
+        ppm.setPoolPermissionLevel(poolManager, 3);
+
+        vm.prank(poolDelegate);
+        vm.expectRevert("PPM:SPPL:PUBLIC_POOL");
+        ppm.setPoolPermissionLevel(poolManager, 0);
+    }
+
+    function test_setPoolPermissionLevel_invalid() external {
+        vm.prank(poolDelegate);
+        vm.expectRevert("PPM:SPPL:INVALID_LEVEL");
+        ppm.setPoolPermissionLevel(poolManager, 4);
+    }
+
+    function test_setPoolPermissionLevel_success() external {
+        assertEq(ppm.poolPermissions(poolManager), 0);
+
+        vm.prank(poolDelegate);
+        ppm.setPoolPermissionLevel(poolManager, 1);
+
+        assertEq(ppm.poolPermissions(poolManager), 1);
+    }
+
+    function testFuzz_setPoolPermissionLevel(uint256 oldPermissionLevel, uint256 newPermissionLevel) external {
+        oldPermissionLevel = bound(oldPermissionLevel, 0, 3);
+        newPermissionLevel = bound(newPermissionLevel, 0, 3);
+
+        vm.prank(poolDelegate);
+        ppm.setPoolPermissionLevel(poolManager, oldPermissionLevel);
+
+        if (oldPermissionLevel == 3) {
+            vm.expectRevert("PPM:SPPL:PUBLIC_POOL");
+        }
+
+        vm.prank(poolDelegate);
+        ppm.setPoolPermissionLevel(poolManager, newPermissionLevel);
+
+        assertEq(ppm.poolPermissions(poolManager), oldPermissionLevel == 3 ? oldPermissionLevel : newPermissionLevel);
+    }
+
+}
+
+contract HasPermissionTests is PoolPermissionManagerTestBase {
+
+    /**************************************************************************************************************************************/
+    /*** Private Permission Level                                                                                                       ***/
+    /**************************************************************************************************************************************/
+
+    function test_hasPermission_private_unauthorized() external {
+        bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
+
+        assertFalse(hasPermission);
+    }
+
+    function test_hasPermission_private_whitelisted() external {
+        lenders.push(lender);
+        booleans.push(true);
+
+        vm.prank(poolDelegate);
+        ppm.setLenderAllowlist(poolManager, lenders, booleans);
+
+        bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
+
+        assertTrue(hasPermission);
+    }
+
+    function testFuzz_hasPermission_private_whitelisted(address poolManager_, address lender_, bytes32 functionId_) external {
+        globals.__setPoolDelegate(poolManager_, true);
+
+        lenders.push(lender_);
+        booleans.push(true);
+
+        vm.prank(poolDelegate);
+        ppm.setLenderAllowlist(poolManager_, lenders, booleans);
+
+        bool hasPermission = ppm.hasPermission(poolManager_, lender_, functionId_);
+
+        assertTrue(hasPermission);
+    }
+
+    function testFuzz_hasPermission_private_unauthorized(address poolManager_, address lender_, bytes32 functionId_) external {
+        bool hasPermission = ppm.hasPermission(poolManager_, lender_, functionId_);
+
+        assertFalse(hasPermission);
+    }
+
+    /**************************************************************************************************************************************/
+    /*** Function Permission Level                                                                                                      ***/
+    /**************************************************************************************************************************************/
+
+    function test_hasPermission_functionLevel_whitelisted() external {
+        vm.prank(poolDelegate);
+        ppm.setPoolPermissionLevel(poolManager, 1);
+
+        lenders.push(lender);
+        booleans.push(true);
+
+        vm.prank(poolDelegate);
+        ppm.setLenderAllowlist(poolManager, lenders, booleans);
+
+        bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
+
+        assertTrue(hasPermission);
+    }
+
+    function test_hasPermission_functionLevel_zeroPoolBitmap() external {
+        vm.prank(poolDelegate);
+        ppm.setPoolPermissionLevel(poolManager, 1);
+
+        bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
+
+        assertFalse(hasPermission);
+    }
+
+    function test_hasPermission_functionLevel_zeroLenderBitmap() external {
+        vm.prank(poolDelegate);
+        ppm.setPoolPermissionLevel(poolManager, 1);
+
+        functionIds.push(functionId);
+        bitmaps.push(generateBitmap([0, 1]));
+
+        vm.prank(poolDelegate);
+        ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
+
+        bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
+
+        assertFalse(hasPermission);
+    }
+
+    function test_hasPermission_functionLevel_mismatch() external {
+        vm.prank(poolDelegate);
+        ppm.setPoolPermissionLevel(poolManager, 1);
+
+        functionIds.push(functionId);
+        bitmaps.push(generateBitmap([0, 1]));
+
+        vm.prank(poolDelegate);
+        ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
+
+        lenders.push(lender);
+        bitmaps[0] = generateBitmap([0, 2, 3]);
+
+        vm.prank(permissionAdmin);
+        ppm.setLenderBitmaps(lenders, bitmaps);
+
+        bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
+
+        assertFalse(hasPermission);
+    }
+
+    function test_hasPermission_functionLevel_match() external {
+        vm.prank(poolDelegate);
+        ppm.setPoolPermissionLevel(poolManager, 1);
+
+        functionIds.push(functionId);
+        bitmaps.push(generateBitmap([0, 1]));
+
+        vm.prank(poolDelegate);
+        ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
+
+        lenders.push(lender);
+        bitmaps[0] = generateBitmap([0, 1, 3]);
+
+        vm.prank(permissionAdmin);
+        ppm.setLenderBitmaps(lenders, bitmaps);
+
+        bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
+
+        assertTrue(hasPermission);
+    }
+
+    /**************************************************************************************************************************************/
+    /*** Pool Permission Level                                                                                                          ***/
+    /**************************************************************************************************************************************/
+
+    function test_hasPermission_poolLevel_whitelisted() external {
+        vm.prank(poolDelegate);
+        ppm.setPoolPermissionLevel(poolManager, 2);
+
+        lenders.push(lender);
+        booleans.push(true);
+
+        vm.prank(poolDelegate);
+        ppm.setLenderAllowlist(poolManager, lenders, booleans);
+
+        bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
+
+        assertTrue(hasPermission);
+    }
+
+    function test_hasPermission_poolLevel_zeroPoolBitmap() external {
+        vm.prank(poolDelegate);
+        ppm.setPoolPermissionLevel(poolManager, 2);
+
+        bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
+
+        assertFalse(hasPermission);
+    }
+
+    function test_hasPermission_poolLevel_zeroLenderBitmap() external {
+        vm.prank(poolDelegate);
+        ppm.setPoolPermissionLevel(poolManager, 1);
+
+        functionIds.push(bytes32(0));
+        bitmaps.push(generateBitmap([1, 2]));
+
+        vm.prank(poolDelegate);
+        ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
+
+        bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
+
+        assertFalse(hasPermission);
+    }
+
+    function test_hasPermission_poolLevel_mismatch() external {
+        vm.prank(poolDelegate);
+        ppm.setPoolPermissionLevel(poolManager, 2);
+
+        functionIds.push(bytes32(0));
+        bitmaps.push(generateBitmap([1, 2]));
+
+        vm.prank(poolDelegate);
+        ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
+
+        lenders.push(lender);
+        bitmaps[0] = generateBitmap([0, 2, 3]);
+
+        vm.prank(permissionAdmin);
+        ppm.setLenderBitmaps(lenders, bitmaps);
+
+        bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
+
+        assertFalse(hasPermission);
+    }
+
+    function test_hasPermission_poolLevel_match() external {
+        vm.prank(poolDelegate);
+        ppm.setPoolPermissionLevel(poolManager, 2);
+
+        functionIds.push(bytes32(0));
+        bitmaps.push(generateBitmap([1, 2]));
+
+        vm.prank(poolDelegate);
+        ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
+
+        lenders.push(lender);
+        bitmaps[0] = generateBitmap([0, 1, 2]);
+
+        vm.prank(permissionAdmin);
+        ppm.setLenderBitmaps(lenders, bitmaps);
+
+        bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
+
+        assertTrue(hasPermission);
+    }
+
+    /**************************************************************************************************************************************/
+    /*** Public Permission Level                                                                                                        ***/
+    /**************************************************************************************************************************************/
+
+    function test_hasPermission_public_success() external {
+        vm.prank(poolDelegate);
+        ppm.setPoolPermissionLevel(poolManager, 3);
+
+        bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
+
+        assertEq(hasPermission, true);
+    }
+
+    function testFuzz_hasPermission_public(address poolManager_, address lender_, bytes32 functionId_) external {
+        globals.__setPoolDelegate(poolManager_, true);
+
+        vm.prank(poolDelegate);
+        ppm.setPoolPermissionLevel(poolManager_, 3);
+
+        bool hasPermission = ppm.hasPermission(poolManager_, lender_, functionId_);
+
+        assertEq(hasPermission, true);
     }
 
 }
