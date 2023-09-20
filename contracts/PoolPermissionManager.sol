@@ -110,6 +110,37 @@ contract PoolPermissionManager is IPoolPermissionManager, PoolPermissionManagerS
     function hasPermission(address poolManager_, address lender_, bytes32 functionId_) external view returns (bool hasPermission_) {
         uint256 permissionLevel_ = poolPermissions[poolManager_];
 
+        // Allow only if the bitmaps match.
+        hasPermission_ = _hasPermission(poolManager_, lender_, permissionLevel_, functionId_);
+    }
+
+    // TODO: Optimize poolBitmaps SLOADS.
+    function hasPermission(
+        address            poolManager_,
+        address[] calldata lenders_,
+        bytes32            functionId_
+    )
+        external view returns (bool hasPermission_)
+    {
+        uint256 permissionLevel_ = poolPermissions[poolManager_];
+
+        for (uint256 i; i < lenders_.length; ++i) {
+            if (!_hasPermission(poolManager_, lenders_[i], permissionLevel_, functionId_)) {
+                return false;
+            }
+        }
+
+        hasPermission_ = true;
+    }
+
+    function _hasPermission(
+        address poolManager_,
+        address lender_,
+        uint256 permissionLevel_,
+        bytes32 functionId_
+    )
+        internal view returns (bool hasPermission_)
+    {
         // Always allow if the pool is public.
         if (permissionLevel_ == PUBLIC) return true;
 
