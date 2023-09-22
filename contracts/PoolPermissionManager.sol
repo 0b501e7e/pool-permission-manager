@@ -66,6 +66,25 @@ contract PoolPermissionManager is IPoolPermissionManager, PoolPermissionManagerS
     /*** Pool Configuration Functions                                                                                                   ***/
     /**************************************************************************************************************************************/
 
+    function configurePool(
+        address            poolManager_,
+        uint256            permissionLevel_,
+        bytes32[] calldata functionIds_,
+        uint256[] calldata poolBitmaps_
+    )
+        external onlyPoolDelegate(poolManager_)
+    {
+        require(poolPermissions[poolManager_] != PUBLIC,    "PPM:CP:PUBLIC_POOL");
+        require(permissionLevel_ <= PUBLIC,                 "PPM:CP:INVALID_LEVEL");
+        require(functionIds_.length == poolBitmaps_.length, "PPM:CP:LENGTH_MISMATCH");
+
+        for (uint256 i; i < functionIds_.length; ++i) {
+            poolBitmaps[poolManager_][functionIds_[i]] = poolBitmaps_[i];
+        }
+
+        poolPermissions[poolManager_] = permissionLevel_;
+    }
+
     function setLenderAllowlist(
         address            poolManager_,
         address[] calldata lenders_,
