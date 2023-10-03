@@ -11,6 +11,8 @@ import { TestBase }    from "../utils/TestBase.sol";
 
 contract PoolPermissionManagerInitializerTests is TestBase {
 
+    event Initialized(address implementation, address globals);
+
     address admin  = makeAddr("admin");
     address lender = makeAddr("lender");
     address pool   = makeAddr("pool");
@@ -35,6 +37,9 @@ contract PoolPermissionManagerInitializerTests is TestBase {
     }
 
     function test_initializer_success() external {
+        vm.expectEmit(address(poolPermissionManager));
+        emit Initialized(implementation, address(globals));
+
         vm.prank(admin);
         PoolPermissionManagerInitializer(address(poolPermissionManager)).initialize(implementation, address(globals));
 

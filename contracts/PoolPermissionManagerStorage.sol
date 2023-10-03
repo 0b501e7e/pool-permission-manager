@@ -1,18 +1,20 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.7;
 
-contract PoolPermissionManagerStorage {
+import { IPoolPermissionManagerStorage } from "./interfaces/IPoolPermissionManagerStorage.sol";
 
-    address public globals;
+contract PoolPermissionManagerStorage is IPoolPermissionManagerStorage {
 
-    mapping(address => bool) public permissionAdmins;
+    address public override globals;
 
-    mapping(address => uint256) public lenderBitmaps;
+    mapping(address => bool) public override permissionAdmins;
 
-    mapping(address => uint256) public poolPermissions;
+    mapping(address => uint256) public override lenderBitmaps;
 
-    mapping(address => mapping(address => bool)) public lenderAllowlist;
+    mapping(address => uint256) public override poolPermissions;
 
-    mapping(address => mapping(bytes32 => uint256)) public poolBitmaps;
+    mapping(address => mapping(address => bool)) public override lenderAllowlist;
+
+    mapping(address => mapping(bytes32 => uint256)) public override poolBitmaps;
 
 }

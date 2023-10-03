@@ -9,8 +9,13 @@ import { PoolPermissionManagerInitializer } from "../../contracts/PoolPermission
 import { GlobalsMock } from "../utils/Mocks.sol";
 import { TestBase }    from "../utils/TestBase.sol";
 
-// TODO: Add checks for emitted events.
 contract PoolPermissionManagerTestBase is TestBase {
+
+    event LenderAllowlistSet(address poolManager, address[] lenders, bool[] booleans);
+    event LenderBitmapsSet(address[] lenders, uint256[] bitmaps);
+    event PermissionAdminSet(address account, bool isAdmin);
+    event PoolBitmapsSet(address poolManager, bytes32[] functionIds, uint256[] bitmaps);
+    event PoolPermissionLevelSet(address poolManager, uint256 permissionLevel);
 
     address governor        = makeAddr("governor");
     address lender          = makeAddr("lender");
@@ -120,6 +125,9 @@ contract SetLenderBitmapsTests is PoolPermissionManagerTestBase {
 
         assertEq(ppm.lenderBitmaps(lender), 0);
 
+        vm.expectEmit(address(ppm));
+        emit LenderBitmapsSet(lenders, bitmaps);
+
         vm.prank(permissionAdmin);
         ppm.setLenderBitmaps(lenders, bitmaps);
 
@@ -138,6 +146,9 @@ contract SetLenderBitmapsTests is PoolPermissionManagerTestBase {
         assertEq(ppm.lenderBitmaps(address(1)), 0);
         assertEq(ppm.lenderBitmaps(address(2)), 0);
         assertEq(ppm.lenderBitmaps(address(3)), 0);
+
+        vm.expectEmit(address(ppm));
+        emit LenderBitmapsSet(lenders, bitmaps);
 
         vm.prank(permissionAdmin);
         ppm.setLenderBitmaps(lenders, bitmaps);
@@ -158,6 +169,9 @@ contract SetPermisionAdminTests is PoolPermissionManagerTestBase {
 
     function test_setPermissionAdmin_success() external {
         assertEq(ppm.permissionAdmins(address(1)), false);
+
+        vm.expectEmit(address(ppm));
+        emit PermissionAdminSet(address(1), true);
 
         vm.prank(governor);
         ppm.setPermissionAdmin(address(1), true);
@@ -196,6 +210,9 @@ contract SetLenderAllowlistTests is PoolPermissionManagerTestBase {
 
         assertFalse(ppm.lenderAllowlist(poolManager, lender));
 
+        vm.expectEmit(address(ppm));
+        emit LenderAllowlistSet(poolManager, lenders, booleans);
+
         vm.prank(poolDelegate);
         ppm.setLenderAllowlist(poolManager, lenders, booleans);
 
@@ -214,6 +231,9 @@ contract SetLenderAllowlistTests is PoolPermissionManagerTestBase {
         assertEq(ppm.lenderAllowlist(poolManager, address(1)), false);
         assertEq(ppm.lenderAllowlist(poolManager, address(2)), false);
         assertEq(ppm.lenderAllowlist(poolManager, address(3)), false);
+
+        vm.expectEmit(address(ppm));
+        emit LenderAllowlistSet(poolManager, lenders, booleans);
 
         vm.prank(poolDelegate);
         ppm.setLenderAllowlist(poolManager, lenders, booleans);
@@ -254,6 +274,9 @@ contract SetPoolBitmapsTests is PoolPermissionManagerTestBase {
 
         assertEq(ppm.poolBitmaps(poolManager, functionId), 0);
 
+        vm.expectEmit(address(ppm));
+        emit PoolBitmapsSet(poolManager, functionIds, bitmaps);
+
         vm.prank(poolDelegate);
         ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
 
@@ -275,6 +298,9 @@ contract SetPoolBitmapsTests is PoolPermissionManagerTestBase {
         assertEq(ppm.poolBitmaps(poolManager, "P:mint"),     0);
         assertEq(ppm.poolBitmaps(poolManager, "P:withdraw"), 0);
         assertEq(ppm.poolBitmaps(poolManager, "P:redeem"),   0);
+
+        vm.expectEmit(address(ppm));
+        emit PoolBitmapsSet(poolManager, functionIds, bitmaps);
 
         vm.prank(poolDelegate);
         ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
@@ -314,6 +340,9 @@ contract SetPoolPermissionLevelTests is PoolPermissionManagerTestBase {
     function test_setPoolPermissionLevel_success() external {
         assertEq(ppm.poolPermissions(poolManager), 0);
 
+        vm.expectEmit(address(ppm));
+        emit PoolPermissionLevelSet(poolManager, 1);
+
         vm.prank(poolDelegate);
         ppm.setPoolPermissionLevel(poolManager, 1);
 
@@ -329,6 +358,9 @@ contract SetPoolPermissionLevelTests is PoolPermissionManagerTestBase {
 
         if (oldPermissionLevel == 3) {
             vm.expectRevert("PPM:SPPL:PUBLIC_POOL");
+        } else {
+            vm.expectEmit(address(ppm));
+            emit PoolPermissionLevelSet(poolManager, newPermissionLevel);
         }
 
         vm.prank(poolDelegate);
@@ -377,6 +409,12 @@ contract ConfigurePoolTests is PoolPermissionManagerTestBase {
 
         assertEq(ppm.poolBitmaps(poolManager, functionId), 0);
         assertEq(ppm.poolPermissions(poolManager),         0);
+
+        vm.expectEmit(address(ppm));
+        emit PoolPermissionLevelSet(poolManager, 1);
+
+        vm.expectEmit(address(ppm));
+        emit PoolBitmapsSet(poolManager, functionIds, bitmaps);
 
         vm.prank(poolDelegate);
         ppm.configurePool(poolManager, 1, functionIds, bitmaps);
