@@ -9,20 +9,25 @@ contract GlobalsMock {
     }
 
     address public governor;
+    address public operationalAdmin;
 
-    PoolDelegate poolDelegate_;
+    mapping(address =>PoolDelegate) _poolDelegates;
 
-    function poolDelegates(address) external view returns (address, bool) {
-        return (poolDelegate_.ownedPoolManager, poolDelegate_.isPoolDelegate);
+    function poolDelegates(address poolDelegate_) external view returns (address, bool) {
+        return (_poolDelegates[poolDelegate_].ownedPoolManager, _poolDelegates[poolDelegate_].isPoolDelegate);
     }
 
     function __setGovernor(address governor_) external {
         governor = governor_;
     }
 
-    function __setPoolDelegate(address ownedPoolManager_, bool isPoolDelegate_) external {
-        poolDelegate_.ownedPoolManager = ownedPoolManager_;
-        poolDelegate_.isPoolDelegate = isPoolDelegate_;
+    function __setOperationalAdmin(address operationalAdmin_) external {
+        operationalAdmin = operationalAdmin_;
+    }
+
+    function __setOwnedPoolManager(address poolDelegate_, address ownedPoolManager_, bool isPoolDelegate_) external {
+        _poolDelegates[poolDelegate_].ownedPoolManager = ownedPoolManager_;
+        _poolDelegates[poolDelegate_].isPoolDelegate = isPoolDelegate_;
     }
 
 }

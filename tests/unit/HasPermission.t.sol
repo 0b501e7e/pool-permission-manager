@@ -28,7 +28,7 @@ contract HasPermissionTests is PoolPermissionManagerTestBase {
     }
 
     function testFuzz_hasPermission_private_whitelisted(address poolManager_, address lender_, bytes32 functionId_) external {
-        globals.__setPoolDelegate(poolManager_, true);
+        globals.__setOwnedPoolManager(poolDelegate, poolManager_, true);
 
         lenders.push(lender_);
         booleans.push(true);
@@ -50,7 +50,7 @@ contract HasPermissionTests is PoolPermissionManagerTestBase {
     {
         vm.assume(lenders_.length > 1);
 
-        globals.__setPoolDelegate(poolManager_, true);
+        globals.__setOwnedPoolManager(poolDelegate, poolManager_, true);
 
         lenders = lenders_;
 
@@ -371,7 +371,7 @@ contract HasPermissionTests is PoolPermissionManagerTestBase {
     }
 
     function testFuzz_hasPermission_public(address poolManager_, address lender_, bytes32 functionId_) external {
-        globals.__setPoolDelegate(poolManager_, true);
+        globals.__setOwnedPoolManager(poolDelegate, poolManager_, true);
 
         vm.prank(poolDelegate);
         ppm.setPoolPermissionLevel(poolManager_, 3);
@@ -384,7 +384,7 @@ contract HasPermissionTests is PoolPermissionManagerTestBase {
     function testFuzz_hasPermission_multiLender_public_(address poolManager_, address[] calldata lenders_, bytes32 functionId_) external {
         vm.assume(lenders_.length > 1);
 
-        globals.__setPoolDelegate(poolManager_, true);
+        globals.__setOwnedPoolManager(poolDelegate, poolManager_, true);
 
         vm.prank(poolDelegate);
         ppm.setPoolPermissionLevel(poolManager_, 3);

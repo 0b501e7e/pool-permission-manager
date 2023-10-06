@@ -7,6 +7,8 @@ interface IGlobalsLike {
 
     function isInstanceOf(bytes32 key, address account) external view returns (bool);
 
+    function operationalAdmin() external view returns (address operationalAdmin);
+
     function poolDelegates(address poolDelegate) external view returns (address ownedPoolManager, bool isPoolDelegate);
 
 }

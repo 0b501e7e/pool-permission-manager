@@ -6,9 +6,9 @@ import { PoolPermissionManagerTestBase } from "./PoolPermissionManagerTestBase.t
 contract SetPoolBitmapsTests is PoolPermissionManagerTestBase {
 
     function test_setPoolBitmaps_unauthorized() external {
-        globals.__setPoolDelegate(poolManager, false);
+        globals.__setOwnedPoolManager(poolDelegate, poolManager, false);
 
-        vm.expectRevert("PPM:NOT_PD");
+        vm.expectRevert("PPM:NOT_PD_GOV_OR_OA");
         ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
     }
 
@@ -26,18 +26,18 @@ contract SetPoolBitmapsTests is PoolPermissionManagerTestBase {
         ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
     }
 
-    function test_setPoolBitmaps_success() external {
-        functionIds.push(functionId);
-        bitmaps.push(generateBitmap([0, 2]));
-
-        assertEq(ppm.poolBitmaps(poolManager, functionId), 0);
-
-        vm.prank(poolDelegate);
-        ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
-
-        assertEq(ppm.poolBitmaps(poolManager, functionId), generateBitmap([0, 2]));
+    function test_setPoolBitmaps_success_poolDelegate() external {
+        _setPoolBitmaps_withActor(poolDelegate);
     }
 
+    function test_setPoolBitmaps_success_governor() external {
+        _setPoolBitmaps_withActor(governor);
+    }
+
+    function test_setPoolBitmaps_success_operationalAdmin() external {
+        _setPoolBitmaps_withActor(operationalAdmin);
+    }
+    
     function test_setPoolBitmaps_batch() external {
         functionIds.push("P:deposit");
         functionIds.push("P:mint");
@@ -61,6 +61,18 @@ contract SetPoolBitmapsTests is PoolPermissionManagerTestBase {
         assertEq(ppm.poolBitmaps(poolManager, "P:mint"),     generateBitmap([0, 2]));
         assertEq(ppm.poolBitmaps(poolManager, "P:withdraw"), generateBitmap([2, 3, 4]));
         assertEq(ppm.poolBitmaps(poolManager, "P:redeem"),   generateBitmap([1, 2, 3]));
+    }
+
+    function _setPoolBitmaps_withActor(address actor) internal {
+        functionIds.push(functionId);
+        bitmaps.push(generateBitmap([0, 2]));
+
+        assertEq(ppm.poolBitmaps(poolManager, functionId), 0);
+
+        vm.prank(actor);
+        ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
+
+        assertEq(ppm.poolBitmaps(poolManager, functionId), generateBitmap([0, 2]));
     }
 
 }

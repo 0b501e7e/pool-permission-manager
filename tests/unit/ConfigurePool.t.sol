@@ -6,9 +6,9 @@ import { PoolPermissionManagerTestBase } from "./PoolPermissionManagerTestBase.t
 contract ConfigurePoolTests is PoolPermissionManagerTestBase {
 
     function test_configurePool_unauthorized() external {
-        globals.__setPoolDelegate(poolManager, false);
+        globals.__setOwnedPoolManager(poolDelegate, poolManager, false);
 
-        vm.expectRevert("PPM:NOT_PD");
+        vm.expectRevert("PPM:NOT_PD_GOV_OR_OA");
         ppm.configurePool(poolManager, 3, functionIds, bitmaps);
     }
 
@@ -35,14 +35,26 @@ contract ConfigurePoolTests is PoolPermissionManagerTestBase {
         ppm.configurePool(poolManager, 2, functionIds, bitmaps);
     }
 
-    function test_configurePool_success() external {
+    function test_configurePool_success_poolDelegate() external {
+        _configurePool_withActor(poolDelegate);
+    }
+
+    function test_configurePool_success_governor() external {
+        _configurePool_withActor(governor);
+    }
+
+    function test_configurePool_success_operationalAdmin() external {
+        _configurePool_withActor(operationalAdmin);
+    }
+
+    function _configurePool_withActor(address actor) internal {
         functionIds.push(functionId);
         bitmaps.push(generateBitmap([0, 2]));
 
         assertEq(ppm.poolBitmaps(poolManager, functionId), 0);
         assertEq(ppm.poolPermissions(poolManager),         0);
 
-        vm.prank(poolDelegate);
+        vm.prank(actor);
         ppm.configurePool(poolManager, 1, functionIds, bitmaps);
 
         assertEq(ppm.poolBitmaps(poolManager, functionId), generateBitmap([0, 2]));

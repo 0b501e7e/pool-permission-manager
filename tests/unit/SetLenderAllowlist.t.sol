@@ -6,9 +6,9 @@ import { PoolPermissionManagerTestBase } from "./PoolPermissionManagerTestBase.t
 contract SetLenderAllowlistTests is PoolPermissionManagerTestBase {
 
     function test_setLenderAllowlist_unauthorized() external {
-        globals.__setPoolDelegate(poolManager, false);
+        globals.__setOwnedPoolManager(poolDelegate, poolManager, false);
 
-        vm.expectRevert("PPM:NOT_PD");
+        vm.expectRevert("PPM:NOT_PD_GOV_OR_OA");
         ppm.setLenderAllowlist(poolManager, lenders, booleans);
     }
 
@@ -26,16 +26,16 @@ contract SetLenderAllowlistTests is PoolPermissionManagerTestBase {
         ppm.setLenderAllowlist(poolManager, lenders, booleans);
     }
 
-    function test_setLenderAllowlist_success() external {
-        lenders.push(lender);
-        booleans.push(true);
+    function test_setLenderAllowlist_success_poolDelegate() external {
+        _setLenderAllowlist_withActor(poolDelegate);
+    }
 
-        assertFalse(ppm.lenderAllowlist(poolManager, lender));
+    function test_setLenderAllowlist_success_governor() external {
+        _setLenderAllowlist_withActor(governor);
+    }
 
-        vm.prank(poolDelegate);
-        ppm.setLenderAllowlist(poolManager, lenders, booleans);
-
-        assertTrue(ppm.lenderAllowlist(poolManager, lender));
+    function test_setLenderAllowlist_success_operationalAdmin() external {
+        _setLenderAllowlist_withActor(operationalAdmin);
     }
 
     function test_setLenderAllowlist_batch() external {
@@ -57,6 +57,18 @@ contract SetLenderAllowlistTests is PoolPermissionManagerTestBase {
         assertEq(ppm.lenderAllowlist(poolManager, address(1)), true);
         assertEq(ppm.lenderAllowlist(poolManager, address(2)), false);
         assertEq(ppm.lenderAllowlist(poolManager, address(3)), true);
+    }
+
+    function _setLenderAllowlist_withActor(address actor) internal {
+        lenders.push(lender);
+        booleans.push(true);
+
+        assertFalse(ppm.lenderAllowlist(poolManager, lender));
+
+        vm.prank(actor);
+        ppm.setLenderAllowlist(poolManager, lenders, booleans);
+
+        assertTrue(ppm.lenderAllowlist(poolManager, lender));
     }
 
 }

@@ -35,12 +35,20 @@ contract PoolPermissionManager is IPoolPermissionManager, PoolPermissionManagerS
         _;
     }
 
-    // TODO: Add operation admin modifier.
-    modifier onlyPoolDelegate(address poolManager_) {
+    modifier onlyPoolDelegateOrProtocolAdmins(address poolManager_) {
         ( address ownedPoolManager_, bool isPoolDelegate_ ) = IGlobalsLike(globals).poolDelegates(msg.sender);
 
-        require(isPoolDelegate_ && ownedPoolManager_ == poolManager_, "PPM:NOT_PD");
+        require(
+            isPoolDelegate_ && ownedPoolManager_ == poolManager_ ||
+            msg.sender == admin()                                ||
+            msg.sender == IGlobalsLike(globals).operationalAdmin(), "PPM:NOT_PD_GOV_OR_OA"
+        );
 
+        _;
+    }
+
+    modifier onlyGovernorOrOperationalAdmin() {
+        require(msg.sender == admin() || msg.sender == IGlobalsLike(globals).operationalAdmin(), "PPM:NOT_GOV_OR_OA");
         _;
     }
 
@@ -59,10 +67,10 @@ contract PoolPermissionManager is IPoolPermissionManager, PoolPermissionManagerS
         emit LenderBitmapsSet(lenders_, bitmaps_);
     }
 
-    function setPermissionAdmin(address account_, bool isPermissionAdmin_) external override onlyGovernor {
-        permissionAdmins[account_] = isPermissionAdmin_;
+    function setPermissionAdmin(address permissionAdmin_, bool isPermissionAdmin_) external override onlyGovernorOrOperationalAdmin {
+        permissionAdmins[permissionAdmin_] = isPermissionAdmin_;
 
-        emit PermissionAdminSet(account_, isPermissionAdmin_);
+        emit PermissionAdminSet(permissionAdmin_, isPermissionAdmin_);
     }
 
     /**************************************************************************************************************************************/
@@ -75,7 +83,7 @@ contract PoolPermissionManager is IPoolPermissionManager, PoolPermissionManagerS
         bytes32[] calldata functionIds_,
         uint256[] calldata poolBitmaps_
     )
-        external override onlyPoolDelegate(poolManager_)
+        external override onlyPoolDelegateOrProtocolAdmins(poolManager_)
     {
         require(poolPermissions[poolManager_] != PUBLIC,    "PPM:CP:PUBLIC_POOL");
         require(permissionLevel_ <= PUBLIC,                 "PPM:CP:INVALID_LEVEL");
@@ -96,7 +104,7 @@ contract PoolPermissionManager is IPoolPermissionManager, PoolPermissionManagerS
         address[] calldata lenders_,
         bool[]    calldata booleans_
     )
-        external override onlyPoolDelegate(poolManager_)
+        external override onlyPoolDelegateOrProtocolAdmins(poolManager_)
     {
         require(lenders_.length > 0,                 "PPM:SLA:NO_LENDERS");
         require(lenders_.length == booleans_.length, "PPM:SLA:LENGTH_MISMATCH");
@@ -113,7 +121,7 @@ contract PoolPermissionManager is IPoolPermissionManager, PoolPermissionManagerS
         bytes32[] calldata functionIds_,
         uint256[] calldata bitmaps_
     )
-        external override onlyPoolDelegate(poolManager_)
+        external override onlyPoolDelegateOrProtocolAdmins(poolManager_)
     {
         require(functionIds_.length > 0,                "PPM:SPB:NO_FUNCTIONS");
         require(functionIds_.length == bitmaps_.length, "PPM:SPB:LENGTH_MISMATCH");
@@ -125,7 +133,12 @@ contract PoolPermissionManager is IPoolPermissionManager, PoolPermissionManagerS
         emit PoolBitmapsSet(poolManager_, functionIds_, bitmaps_);
     }
 
-    function setPoolPermissionLevel(address poolManager_, uint256 permissionLevel_) external override onlyPoolDelegate(poolManager_) {
+    function setPoolPermissionLevel(
+        address poolManager_, 
+        uint256 permissionLevel_
+    ) 
+        external override onlyPoolDelegateOrProtocolAdmins(poolManager_) 
+    {
         require(poolPermissions[poolManager_] != PUBLIC, "PPM:SPPL:PUBLIC_POOL");
         require(permissionLevel_ <= PUBLIC,              "PPM:SPPL:INVALID_LEVEL");
 

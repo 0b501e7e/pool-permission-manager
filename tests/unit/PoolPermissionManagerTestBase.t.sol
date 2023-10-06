@@ -12,11 +12,12 @@ import { TestBase }    from "../utils/TestBase.sol";
 // TODO: Add checks for emitted events.
 contract PoolPermissionManagerTestBase is TestBase {
 
-    address governor        = makeAddr("governor");
-    address lender          = makeAddr("lender");
-    address permissionAdmin = makeAddr("permissionAdmin");
-    address poolDelegate    = makeAddr("poolDelegate");
-    address poolManager     = makeAddr("poolManager");
+    address governor         = makeAddr("governor");
+    address lender           = makeAddr("lender");
+    address operationalAdmin = makeAddr("operationalAdmin");
+    address permissionAdmin  = makeAddr("permissionAdmin");
+    address poolDelegate     = makeAddr("poolDelegate");
+    address poolManager      = makeAddr("poolManager");
 
     address implementation = address(new PoolPermissionManager());
     address initializer    = address(new PoolPermissionManagerInitializer());
@@ -35,7 +36,8 @@ contract PoolPermissionManagerTestBase is TestBase {
         globals = new GlobalsMock();
 
         globals.__setGovernor(governor);
-        globals.__setPoolDelegate(poolManager, true);
+        globals.__setOperationalAdmin(operationalAdmin);
+        globals.__setOwnedPoolManager(poolDelegate, poolManager, true);
 
         ppm = PoolPermissionManager(address(new NonTransparentProxy(governor, address(initializer))));
 

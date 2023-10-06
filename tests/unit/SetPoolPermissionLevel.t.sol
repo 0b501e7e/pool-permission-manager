@@ -6,9 +6,9 @@ import { PoolPermissionManagerTestBase } from "./PoolPermissionManagerTestBase.t
 contract SetPoolPermissionLevelTests is PoolPermissionManagerTestBase {
 
     function test_setPoolPermissionLevel_unauthorized() external {
-        globals.__setPoolDelegate(poolManager, false);
+        globals.__setOwnedPoolManager(poolDelegate, poolManager, false);
 
-        vm.expectRevert("PPM:NOT_PD");
+        vm.expectRevert("PPM:NOT_PD_GOV_OR_OA");
         ppm.setPoolPermissionLevel(poolManager, 3);
     }
 
@@ -27,13 +27,16 @@ contract SetPoolPermissionLevelTests is PoolPermissionManagerTestBase {
         ppm.setPoolPermissionLevel(poolManager, 4);
     }
 
-    function test_setPoolPermissionLevel_success() external {
-        assertEq(ppm.poolPermissions(poolManager), 0);
+    function test_setPoolPermissionLevel_success_poolDelegate() external {
+        _setPoolPermissionLevel_withActor(poolDelegate);
+    }
 
-        vm.prank(poolDelegate);
-        ppm.setPoolPermissionLevel(poolManager, 1);
+    function test_setPoolPermissionLevel_success_governor() external {
+        _setPoolPermissionLevel_withActor(governor);
+    }
 
-        assertEq(ppm.poolPermissions(poolManager), 1);
+    function test_setPoolPermissionLevel_success_operationalAdmin() external {
+        _setPoolPermissionLevel_withActor(operationalAdmin);
     }
 
     function testFuzz_setPoolPermissionLevel(uint256 oldPermissionLevel, uint256 newPermissionLevel) external {
@@ -51,6 +54,15 @@ contract SetPoolPermissionLevelTests is PoolPermissionManagerTestBase {
         ppm.setPoolPermissionLevel(poolManager, newPermissionLevel);
 
         assertEq(ppm.poolPermissions(poolManager), oldPermissionLevel == 3 ? oldPermissionLevel : newPermissionLevel);
+    }
+
+    function _setPoolPermissionLevel_withActor(address actor) internal {
+        assertEq(ppm.poolPermissions(poolManager), 0);
+
+        vm.prank(actor);
+        ppm.setPoolPermissionLevel(poolManager, 1);
+
+        assertEq(ppm.poolPermissions(poolManager), 1);
     }
 
 }
