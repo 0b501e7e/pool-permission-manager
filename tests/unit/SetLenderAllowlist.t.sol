@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.7;
 
-import { PoolPermissionManagerTestBase } from "./PoolPermissionManagerTestBase.t.sol";
+import { TestBase } from "../utils/TestBase.sol";
 
-contract SetLenderAllowlistTests is PoolPermissionManagerTestBase {
+contract SetLenderAllowlistTests is TestBase {
 
     function test_setLenderAllowlist_unauthorized() external {
         globals.__setOwnedPoolManager(poolDelegate, poolManager, false);

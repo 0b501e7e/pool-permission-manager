@@ -3,11 +3,15 @@ pragma solidity ^0.8.7;
 
 import { NonTransparentProxied } from "../modules/ntp/contracts/NonTransparentProxied.sol";
 
-import { IPoolPermissionManagerInitializer } from "./interfaces/IPoolPermissionManagerInitializer.sol";
+import { IMaplePoolPermissionManagerInitializer } from "./interfaces/IMaplePoolPermissionManagerInitializer.sol";
 
-import { PoolPermissionManagerStorage } from "./PoolPermissionManagerStorage.sol";
+import { MaplePoolPermissionManagerStorage } from "./MaplePoolPermissionManagerStorage.sol";
 
-contract PoolPermissionManagerInitializer is IPoolPermissionManagerInitializer, NonTransparentProxied, PoolPermissionManagerStorage {
+contract MaplePoolPermissionManagerInitializer is
+    IMaplePoolPermissionManagerInitializer,
+    MaplePoolPermissionManagerStorage,
+    NonTransparentProxied
+{
 
     function initialize(address implementation_, address globals_) external override {
         require(msg.sender == admin(), "PPMI:I:NOT_GOVERNOR");

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.7;
 
-import { IPoolPermissionManagerStorage } from "./interfaces/IPoolPermissionManagerStorage.sol";
+import { IMaplePoolPermissionManagerStorage } from "./interfaces/IMaplePoolPermissionManagerStorage.sol";
 
-contract PoolPermissionManagerStorage is IPoolPermissionManagerStorage {
+contract MaplePoolPermissionManagerStorage is IMaplePoolPermissionManagerStorage {
 
     address public override globals;
 

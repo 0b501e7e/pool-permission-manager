@@ -4,11 +4,11 @@ pragma solidity ^0.8.7;
 import { NonTransparentProxied } from "../modules/ntp/contracts/NonTransparentProxied.sol";
 
 import { IGlobalsLike }           from "./interfaces/Interfaces.sol";
-import { IPoolPermissionManager } from "./interfaces/IPoolPermissionManager.sol";
+import { IMaplePoolPermissionManager } from "./interfaces/IMaplePoolPermissionManager.sol";
 
-import { PoolPermissionManagerStorage } from "./PoolPermissionManagerStorage.sol";
+import { MaplePoolPermissionManagerStorage } from "./MaplePoolPermissionManagerStorage.sol";
 
-contract PoolPermissionManager is IPoolPermissionManager, PoolPermissionManagerStorage, NonTransparentProxied {
+contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPermissionManagerStorage, NonTransparentProxied {
 
     /**************************************************************************************************************************************/
     /*** Permission Levels                                                                                                              ***/
@@ -134,10 +134,10 @@ contract PoolPermissionManager is IPoolPermissionManager, PoolPermissionManagerS
     }
 
     function setPoolPermissionLevel(
-        address poolManager_, 
+        address poolManager_,
         uint256 permissionLevel_
-    ) 
-        external override onlyPoolDelegateOrProtocolAdmins(poolManager_) 
+    )
+        external override onlyPoolDelegateOrProtocolAdmins(poolManager_)
     {
         require(poolPermissions[poolManager_] != PUBLIC, "PPM:SPPL:PUBLIC_POOL");
         require(permissionLevel_ <= PUBLIC,              "PPM:SPPL:INVALID_LEVEL");

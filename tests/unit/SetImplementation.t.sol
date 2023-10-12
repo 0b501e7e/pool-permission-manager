@@ -3,19 +3,19 @@ pragma solidity ^0.8.7;
 
 import { NonTransparentProxy } from "../../modules/ntp/contracts/NonTransparentProxy.sol";
 
-import { PoolPermissionManager } from "../../contracts/PoolPermissionManager.sol";
+import { MaplePoolPermissionManager } from "../../contracts/MaplePoolPermissionManager.sol";
 
-import { PoolPermissionManagerTestBase } from "./PoolPermissionManagerTestBase.t.sol";
+import { TestBase } from "../utils/TestBase.sol";
 
-contract SetImplementationTests is PoolPermissionManagerTestBase {
-    
+contract SetImplementationTests is TestBase {
+
     function test_setImplementation_unauthorized() external {
         vm.expectRevert("NTP:SI:NOT_ADMIN");
         NonTransparentProxy(address(ppm)).setImplementation(address(0x1));
     }
 
     function test_setImplementation_success() external {
-        address newImplementation = address(new PoolPermissionManager());
+        address newImplementation = address(new MaplePoolPermissionManager());
 
         assertEq(ppm.implementation(), implementation);
 

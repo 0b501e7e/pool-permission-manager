@@ -3,7 +3,9 @@ pragma solidity ^0.8.7;
 
 import { INonTransparentProxied } from "../../modules/ntp/contracts/interfaces/INonTransparentProxied.sol";
 
-interface IPoolPermissionManager is INonTransparentProxied {
+import { IMaplePoolPermissionManagerStorage } from "./IMaplePoolPermissionManagerStorage.sol";
+
+interface IMaplePoolPermissionManager is IMaplePoolPermissionManagerStorage, INonTransparentProxied {
 
     /**************************************************************************************************************************************/
     /*** Events                                                                                                                         ***/

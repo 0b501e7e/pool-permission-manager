@@ -3,9 +3,9 @@ pragma solidity ^0.8.7;
 
 import { NonTransparentProxy } from "../../modules/ntp/contracts/NonTransparentProxy.sol";
 
-import { PoolPermissionManagerTestBase } from "./PoolPermissionManagerTestBase.t.sol";
+import { TestBase } from "../utils/TestBase.sol";
 
-contract FallbackTests is PoolPermissionManagerTestBase {
+contract FallbackTests is TestBase {
 
     function test_fallback_noCode() external {
         address newImplementation = makeAddr("notContract");
