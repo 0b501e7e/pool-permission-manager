@@ -3,8 +3,9 @@ pragma solidity ^0.8.7;
 
 import { NonTransparentProxy } from "../../modules/ntp/contracts/NonTransparentProxy.sol";
 
-import { MaplePoolPermissionManager }            from "../../contracts/MaplePoolPermissionManager.sol";
-import { MaplePoolPermissionManagerInitializer } from "../../contracts/MaplePoolPermissionManagerInitializer.sol";
+import { MaplePoolPermissionManagerInitializer } from "../../contracts/proxy/MaplePoolPermissionManagerInitializer.sol";
+
+import { MaplePoolPermissionManager } from "../../contracts/MaplePoolPermissionManager.sol";
 
 import { GlobalsMock } from "../utils/Mocks.sol";
 import { TestBase }    from "../utils/TestBase.sol";

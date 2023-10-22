@@ -5,6 +5,13 @@ import { TestBase } from "../utils/TestBase.sol";
 
 contract SetLenderAllowlistTests is TestBase {
 
+    function test_setLenderAllowlist_protocolPaused() external {
+        globals.__setFunctionPaused(true);
+        
+        vm.expectRevert("PPM:PAUSED");
+        ppm.setLenderAllowlist(poolManager, lenders, booleans);
+    }
+
     function test_setLenderAllowlist_unauthorized() external {
         globals.__setOwnedPoolManager(poolDelegate, poolManager, false);
 

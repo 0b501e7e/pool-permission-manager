@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.7;
 
-import { NonTransparentProxied } from "../modules/ntp/contracts/NonTransparentProxied.sol";
+import { NonTransparentProxied } from "../../modules/ntp/contracts/NonTransparentProxied.sol";
 
-import { IMaplePoolPermissionManagerInitializer } from "./interfaces/IMaplePoolPermissionManagerInitializer.sol";
+import { IMaplePoolPermissionManagerInitializer } from "../interfaces/IMaplePoolPermissionManagerInitializer.sol";
 
 import { MaplePoolPermissionManagerStorage } from "./MaplePoolPermissionManagerStorage.sol";
 

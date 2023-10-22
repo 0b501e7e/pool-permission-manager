@@ -6,7 +6,39 @@ import { NonTransparentProxied } from "../modules/ntp/contracts/NonTransparentPr
 import { IGlobalsLike }           from "./interfaces/Interfaces.sol";
 import { IMaplePoolPermissionManager } from "./interfaces/IMaplePoolPermissionManager.sol";
 
-import { MaplePoolPermissionManagerStorage } from "./MaplePoolPermissionManagerStorage.sol";
+import { MaplePoolPermissionManagerStorage } from "./proxy/MaplePoolPermissionManagerStorage.sol";
+
+/*
+
+    ███╗   ███╗ █████╗ ██████╗ ██╗     ███████╗
+    ████╗ ████║██╔══██╗██╔══██╗██║     ██╔════╝
+    ██╔████╔██║███████║██████╔╝██║     █████╗
+    ██║╚██╔╝██║██╔══██║██╔═══╝ ██║     ██╔══╝
+    ██║ ╚═╝ ██║██║  ██║██║     ███████╗███████╗
+    ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝     ╚══════╝╚══════╝
+
+    ██████╗  ██████╗  ██████╗ ██╗
+    ██╔══██╗██╔═══██╗██╔═══██╗██║
+    ██████╔╝██║   ██║██║   ██║██║
+    ██╔═══╝ ██║   ██║██║   ██║██║
+    ██║     ╚██████╔╝╚██████╔╝███████╗
+    ╚═╝      ╚═════╝  ╚═════╝ ╚══════╝
+
+    ██████╗ ███████╗██████╗ ███╗   ███╗██╗███████╗███████╗██╗ ██████╗ ███╗   ██╗
+    ██╔══██╗██╔════╝██╔══██╗████╗ ████║██║██╔════╝██╔════╝██║██╔═══██╗████╗  ██║
+    ██████╔╝█████╗  ██████╔╝██╔████╔██║██║███████╗███████╗██║██║   ██║██╔██╗ ██║
+    ██╔═══╝ ██╔══╝  ██╔══██╗██║╚██╔╝██║██║╚════██║╚════██║██║██║   ██║██║╚██╗██║
+    ██║     ███████╗██║  ██║██║ ╚═╝ ██║██║███████║███████║██║╚██████╔╝██║ ╚████║
+    ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝╚══════╝╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝
+
+    ███╗   ███╗ █████╗ ███╗   ██╗ █████╗  ██████╗ ███████╗██████╗
+    ████╗ ████║██╔══██╗████╗  ██║██╔══██╗██╔════╝ ██╔════╝██╔══██╗
+    ██╔████╔██║███████║██╔██╗ ██║███████║██║  ███╗█████╗  ██████╔╝
+    ██║╚██╔╝██║██╔══██║██║╚██╗██║██╔══██║██║   ██║██╔══╝  ██╔══██╗
+    ██║ ╚═╝ ██║██║  ██║██║ ╚████║██║  ██║╚██████╔╝███████╗██║  ██║
+    ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝
+
+*/
 
 contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPermissionManagerStorage, NonTransparentProxied {
 
@@ -20,7 +52,7 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
     uint256 constant PUBLIC         = 3;  // Allow always.
 
     /**************************************************************************************************************************************/
-    /*** Access Control Modifiers                                                                                                       ***/
+    /*** Modifiers                                                                                                       ***/
     /**************************************************************************************************************************************/
 
     modifier onlyGovernor() {
@@ -52,11 +84,18 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
         _;
     }
 
+    modifier whenProtocolNotPaused() {
+        require(!IGlobalsLike(globals).isFunctionPaused(msg.sig), "PPM:PAUSED");
+        _;
+    }
+
     /**************************************************************************************************************************************/
     /*** Administrative Functions                                                                                                       ***/
     /**************************************************************************************************************************************/
 
-    function setLenderBitmaps(address[] calldata lenders_, uint256[] calldata bitmaps_) external override onlyPermissionAdmin {
+    function setLenderBitmaps(address[] calldata lenders_,uint256[] calldata bitmaps_)
+        external override whenProtocolNotPaused onlyPermissionAdmin
+    {
         require(lenders_.length > 0,                "PPM:SLB:NO_LENDERS");
         require(lenders_.length == bitmaps_.length, "PPM:SLB:LENGTH_MISMATCH");
 
@@ -67,7 +106,9 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
         emit LenderBitmapsSet(lenders_, bitmaps_);
     }
 
-    function setPermissionAdmin(address permissionAdmin_, bool isPermissionAdmin_) external override onlyGovernorOrOperationalAdmin {
+    function setPermissionAdmin(address permissionAdmin_, bool isPermissionAdmin_)
+        external override whenProtocolNotPaused onlyGovernorOrOperationalAdmin
+    {
         permissionAdmins[permissionAdmin_] = isPermissionAdmin_;
 
         emit PermissionAdminSet(permissionAdmin_, isPermissionAdmin_);
@@ -83,7 +124,7 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
         bytes32[] calldata functionIds_,
         uint256[] calldata poolBitmaps_
     )
-        external override onlyPoolDelegateOrProtocolAdmins(poolManager_)
+        external override whenProtocolNotPaused onlyPoolDelegateOrProtocolAdmins(poolManager_)
     {
         require(poolPermissions[poolManager_] != PUBLIC,    "PPM:CP:PUBLIC_POOL");
         require(permissionLevel_ <= PUBLIC,                 "PPM:CP:INVALID_LEVEL");
@@ -104,7 +145,7 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
         address[] calldata lenders_,
         bool[]    calldata booleans_
     )
-        external override onlyPoolDelegateOrProtocolAdmins(poolManager_)
+        external override whenProtocolNotPaused onlyPoolDelegateOrProtocolAdmins(poolManager_)
     {
         require(lenders_.length > 0,                 "PPM:SLA:NO_LENDERS");
         require(lenders_.length == booleans_.length, "PPM:SLA:LENGTH_MISMATCH");
@@ -121,7 +162,7 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
         bytes32[] calldata functionIds_,
         uint256[] calldata bitmaps_
     )
-        external override onlyPoolDelegateOrProtocolAdmins(poolManager_)
+        external override whenProtocolNotPaused onlyPoolDelegateOrProtocolAdmins(poolManager_)
     {
         require(functionIds_.length > 0,                "PPM:SPB:NO_FUNCTIONS");
         require(functionIds_.length == bitmaps_.length, "PPM:SPB:LENGTH_MISMATCH");
@@ -137,7 +178,7 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
         address poolManager_,
         uint256 permissionLevel_
     )
-        external override onlyPoolDelegateOrProtocolAdmins(poolManager_)
+        external override whenProtocolNotPaused onlyPoolDelegateOrProtocolAdmins(poolManager_)
     {
         require(poolPermissions[poolManager_] != PUBLIC, "PPM:SPPL:PUBLIC_POOL");
         require(permissionLevel_ <= PUBLIC,              "PPM:SPPL:INVALID_LEVEL");
@@ -164,7 +205,6 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
         hasPermission_ = _hasPermission(poolManager_, lender_, permissionLevel_, functionId_);
     }
 
-    // TODO: Optimize poolBitmaps SLOADS.
     function hasPermission(
         address            poolManager_,
         address[] calldata lenders_,

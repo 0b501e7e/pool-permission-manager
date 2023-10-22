@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.7;
 
-import { IMaplePoolPermissionManagerStorage } from "./interfaces/IMaplePoolPermissionManagerStorage.sol";
+import { IMaplePoolPermissionManagerStorage } from "../interfaces/IMaplePoolPermissionManagerStorage.sol";
 
 contract MaplePoolPermissionManagerStorage is IMaplePoolPermissionManagerStorage {
 

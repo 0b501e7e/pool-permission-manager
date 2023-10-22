@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.7;
 
-interface IGlobalsLike { 
+interface IGlobalsLike {
 
     function governor() external view returns (address);
+
+    function isFunctionPaused(bytes4 sig_) external view returns (bool isFunctionPaused_);
 
     function isInstanceOf(bytes32 key, address account) external view returns (bool);
 

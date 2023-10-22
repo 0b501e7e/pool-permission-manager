@@ -5,6 +5,13 @@ import { TestBase } from "../utils/TestBase.sol";
 
 contract SetLenderBitmapsTests is TestBase {
 
+    function test_setLenderBitmaps_protocolPaused() external {
+        globals.__setFunctionPaused(true);
+
+        vm.expectRevert("PPM:PAUSED");
+        ppm.setLenderBitmaps(lenders, bitmaps);
+    }
+
     function test_setLenderBitmaps_unauthorized() external {
         vm.expectRevert("PPM:NOT_PPM_ADMIN");
         ppm.setLenderBitmaps(lenders, bitmaps);

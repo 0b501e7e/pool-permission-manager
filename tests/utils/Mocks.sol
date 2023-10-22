@@ -8,13 +8,23 @@ contract GlobalsMock {
         bool    isPoolDelegate;
     }
 
+    bool internal _isFunctionPaused;
+
     address public governor;
     address public operationalAdmin;
 
-    mapping(address =>PoolDelegate) _poolDelegates;
+    mapping(address => PoolDelegate) _poolDelegates;
+
+    function isFunctionPaused(bytes4) external view returns (bool isFunctionPaused_) {
+        isFunctionPaused_ = _isFunctionPaused;
+    }
 
     function poolDelegates(address poolDelegate_) external view returns (address, bool) {
         return (_poolDelegates[poolDelegate_].ownedPoolManager, _poolDelegates[poolDelegate_].isPoolDelegate);
+    }
+
+    function __setFunctionPaused(bool paused_) external {
+        _isFunctionPaused = paused_;
     }
 
     function __setGovernor(address governor_) external {

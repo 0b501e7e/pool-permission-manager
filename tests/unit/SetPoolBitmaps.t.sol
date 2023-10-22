@@ -5,6 +5,13 @@ import { TestBase } from "../utils/TestBase.sol";
 
 contract SetPoolBitmapsTests is TestBase {
 
+    function test_setPoolBitmaps_protocolPaused() external {
+        globals.__setFunctionPaused(true);
+
+        vm.expectRevert("PPM:PAUSED");
+        ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
+    }
+
     function test_setPoolBitmaps_unauthorized() external {
         globals.__setOwnedPoolManager(poolDelegate, poolManager, false);
 

@@ -5,6 +5,13 @@ import { TestBase } from "../utils/TestBase.sol";
 
 contract SetPoolPermissionLevelTests is TestBase {
 
+    function test_setPoolPermissionLevel_protocolPaused() external {
+        globals.__setFunctionPaused(true);
+
+        vm.expectRevert("PPM:PAUSED");
+        ppm.setPoolPermissionLevel(poolManager, 3);
+    }
+
     function test_setPoolPermissionLevel_unauthorized() external {
         globals.__setOwnedPoolManager(poolDelegate, poolManager, false);
 

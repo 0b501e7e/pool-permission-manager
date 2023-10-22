@@ -5,6 +5,13 @@ import { TestBase } from "../utils/TestBase.sol";
 
 contract ConfigurePoolTests is TestBase {
 
+    function test_configurePool_protocolPaused() external {
+        globals.__setFunctionPaused(true);
+        
+        vm.expectRevert("PPM:PAUSED");
+        ppm.configurePool(poolManager, 3, functionIds, bitmaps);
+    }
+
     function test_configurePool_unauthorized() external {
         globals.__setOwnedPoolManager(poolDelegate, poolManager, false);
 
