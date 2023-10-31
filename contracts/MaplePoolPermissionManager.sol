@@ -3,7 +3,7 @@ pragma solidity ^0.8.7;
 
 import { NonTransparentProxied } from "../modules/ntp/contracts/NonTransparentProxied.sol";
 
-import { IGlobalsLike }           from "./interfaces/Interfaces.sol";
+import { IGlobalsLike }                from "./interfaces/Interfaces.sol";
 import { IMaplePoolPermissionManager } from "./interfaces/IMaplePoolPermissionManager.sol";
 
 import { MaplePoolPermissionManagerStorage } from "./proxy/MaplePoolPermissionManagerStorage.sol";
@@ -52,7 +52,7 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
     uint256 constant PUBLIC         = 3;  // Allow always.
 
     /**************************************************************************************************************************************/
-    /*** Modifiers                                                                                                       ***/
+    /*** Modifiers                                                                                                                      ***/
     /**************************************************************************************************************************************/
 
     modifier onlyGovernor() {
@@ -61,8 +61,13 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
         _;
     }
 
-    modifier onlyPermissionAdmin() {
-        require(permissionAdmins[msg.sender], "PPM:NOT_PPM_ADMIN");
+    modifier onlyPermissionAdminOrProtocolAdmins() {
+        require(
+            permissionAdmins[msg.sender]                         ||
+            msg.sender == admin()                                ||
+            msg.sender == IGlobalsLike(globals).operationalAdmin(),
+            "PPM:NOT_PPM_ADMIN_GOV_OR_OA"
+        );
 
         _;
     }
@@ -73,7 +78,8 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
         require(
             isPoolDelegate_ && ownedPoolManager_ == poolManager_ ||
             msg.sender == admin()                                ||
-            msg.sender == IGlobalsLike(globals).operationalAdmin(), "PPM:NOT_PD_GOV_OR_OA"
+            msg.sender == IGlobalsLike(globals).operationalAdmin(),
+            "PPM:NOT_PD_GOV_OR_OA"
         );
 
         _;
@@ -94,7 +100,7 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
     /**************************************************************************************************************************************/
 
     function setLenderBitmaps(address[] calldata lenders_,uint256[] calldata bitmaps_)
-        external override whenProtocolNotPaused onlyPermissionAdmin
+        external override whenProtocolNotPaused onlyPermissionAdminOrProtocolAdmins
     {
         require(lenders_.length > 0,                "PPM:SLB:NO_LENDERS");
         require(lenders_.length == bitmaps_.length, "PPM:SLB:LENGTH_MISMATCH");
@@ -126,15 +132,16 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
     )
         external override whenProtocolNotPaused onlyPoolDelegateOrProtocolAdmins(poolManager_)
     {
-        require(poolPermissions[poolManager_] != PUBLIC,    "PPM:CP:PUBLIC_POOL");
+        require(permissionLevels[poolManager_] != PUBLIC,   "PPM:CP:PUBLIC_POOL");
         require(permissionLevel_ <= PUBLIC,                 "PPM:CP:INVALID_LEVEL");
+        require(functionIds_.length > 0,                    "PPM:CP:NO_FUNCTIONS");
         require(functionIds_.length == poolBitmaps_.length, "PPM:CP:LENGTH_MISMATCH");
 
         for (uint256 i; i < functionIds_.length; ++i) {
             poolBitmaps[poolManager_][functionIds_[i]] = poolBitmaps_[i];
         }
 
-        poolPermissions[poolManager_] = permissionLevel_;
+        permissionLevels[poolManager_] = permissionLevel_;
 
         emit PoolPermissionLevelSet(poolManager_, permissionLevel_);
         emit PoolBitmapsSet(poolManager_, functionIds_, poolBitmaps_);
@@ -180,10 +187,10 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
     )
         external override whenProtocolNotPaused onlyPoolDelegateOrProtocolAdmins(poolManager_)
     {
-        require(poolPermissions[poolManager_] != PUBLIC, "PPM:SPPL:PUBLIC_POOL");
-        require(permissionLevel_ <= PUBLIC,              "PPM:SPPL:INVALID_LEVEL");
+        require(permissionLevels[poolManager_] != PUBLIC, "PPM:SPPL:PUBLIC_POOL");
+        require(permissionLevel_ <= PUBLIC,               "PPM:SPPL:INVALID_LEVEL");
 
-        poolPermissions[poolManager_] = permissionLevel_;
+        permissionLevels[poolManager_] = permissionLevel_;
 
         emit PoolPermissionLevelSet(poolManager_, permissionLevel_);
     }
@@ -199,10 +206,8 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
     )
         external override view returns (bool hasPermission_)
     {
-        uint256 permissionLevel_ = poolPermissions[poolManager_];
-
         // Allow only if the bitmaps match.
-        hasPermission_ = _hasPermission(poolManager_, lender_, permissionLevel_, functionId_);
+        hasPermission_ = _hasPermission(poolManager_, lender_, permissionLevels[poolManager_], functionId_);
     }
 
     function hasPermission(
@@ -212,7 +217,7 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
     )
         external override view returns (bool hasPermission_)
     {
-        uint256 permissionLevel_ = poolPermissions[poolManager_];
+        uint256 permissionLevel_ = permissionLevels[poolManager_];
 
         for (uint256 i; i < lenders_.length; ++i) {
             if (!_hasPermission(poolManager_, lenders_[i], permissionLevel_, functionId_)) {

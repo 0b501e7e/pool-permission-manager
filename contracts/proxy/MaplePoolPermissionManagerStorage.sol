@@ -11,7 +11,7 @@ contract MaplePoolPermissionManagerStorage is IMaplePoolPermissionManagerStorage
 
     mapping(address => uint256) public override lenderBitmaps;
 
-    mapping(address => uint256) public override poolPermissions;
+    mapping(address => uint256) public override permissionLevels;
 
     mapping(address => mapping(address => bool)) public override lenderAllowlist;
 

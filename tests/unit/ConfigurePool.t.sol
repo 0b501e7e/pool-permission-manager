@@ -7,7 +7,7 @@ contract ConfigurePoolTests is TestBase {
 
     function test_configurePool_protocolPaused() external {
         globals.__setFunctionPaused(true);
-        
+
         vm.expectRevert("PPM:PAUSED");
         ppm.configurePool(poolManager, 3, functionIds, bitmaps);
     }
@@ -32,6 +32,12 @@ contract ConfigurePoolTests is TestBase {
         vm.prank(poolDelegate);
         vm.expectRevert("PPM:CP:INVALID_LEVEL");
         ppm.configurePool(poolManager, 4, functionIds, bitmaps);
+    }
+
+    function test_configurePool_noFunctionIds() external {
+        vm.prank(poolDelegate);
+        vm.expectRevert("PPM:CP:NO_FUNCTIONS");
+        ppm.configurePool(poolManager, 2, functionIds, bitmaps);
     }
 
     function test_configurePool_lengthMismatch() external {
@@ -59,13 +65,13 @@ contract ConfigurePoolTests is TestBase {
         bitmaps.push(generateBitmap([0, 2]));
 
         assertEq(ppm.poolBitmaps(poolManager, functionId), 0);
-        assertEq(ppm.poolPermissions(poolManager),         0);
+        assertEq(ppm.permissionLevels(poolManager),        0);
 
         vm.prank(actor);
         ppm.configurePool(poolManager, 1, functionIds, bitmaps);
 
         assertEq(ppm.poolBitmaps(poolManager, functionId), generateBitmap([0, 2]));
-        assertEq(ppm.poolPermissions(poolManager),         1);
+        assertEq(ppm.permissionLevels(poolManager),        1);
     }
 
 }

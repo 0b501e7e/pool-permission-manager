@@ -13,7 +13,7 @@ contract SetLenderBitmapsTests is TestBase {
     }
 
     function test_setLenderBitmaps_unauthorized() external {
-        vm.expectRevert("PPM:NOT_PPM_ADMIN");
+        vm.expectRevert("PPM:NOT_PPM_ADMIN_GOV_OR_OA");
         ppm.setLenderBitmaps(lenders, bitmaps);
     }
 
@@ -38,6 +38,30 @@ contract SetLenderBitmapsTests is TestBase {
         assertEq(ppm.lenderBitmaps(lender), 0);
 
         vm.prank(permissionAdmin);
+        ppm.setLenderBitmaps(lenders, bitmaps);
+
+        assertEq(ppm.lenderBitmaps(lender), generateBitmap([0, 2]));
+    }
+
+    function test_setLenderBitmaps_success_asGovernor() external {
+        lenders.push(lender);
+        bitmaps.push(generateBitmap([0, 2]));
+
+        assertEq(ppm.lenderBitmaps(lender), 0);
+
+        vm.prank(governor);
+        ppm.setLenderBitmaps(lenders, bitmaps);
+
+        assertEq(ppm.lenderBitmaps(lender), generateBitmap([0, 2]));
+    }
+
+    function test_setLenderBitmaps_success_asOperationalAdmin() external {
+        lenders.push(lender);
+        bitmaps.push(generateBitmap([0, 2]));
+
+        assertEq(ppm.lenderBitmaps(lender), 0);
+
+        vm.prank(operationalAdmin);
         ppm.setLenderBitmaps(lenders, bitmaps);
 
         assertEq(ppm.lenderBitmaps(lender), generateBitmap([0, 2]));

@@ -36,6 +36,14 @@ interface IMaplePoolPermissionManagerStorage {
     function permissionAdmins(address account) external view returns (bool isAdmin);
 
     /**
+     *  @dev    Returns the permission level of a pool.
+     *          Permission levels: private (0), function-level (1), pool-level (2), public (3)
+     *  @param  poolManager     Address of the pool manager.
+     *  @return permissionLevel Permission level of the pool.
+     */
+    function permissionLevels(address poolManager) external view returns (uint256 permissionLevel);
+
+    /**
      *  @dev    Returns a function-specific pool permission bitmap.
                 Return the pool-level permission bitmap if the function identifier is zero.
      *  @param  poolManager Address of the pool manager.
@@ -43,13 +51,5 @@ interface IMaplePoolPermissionManagerStorage {
      *  @return bitmap      Permission bitmap of the pool.
      */
     function poolBitmaps(address poolManager, bytes32 functionId) external view returns (uint256 bitmap);
-
-    /**
-     *  @dev    Returns the permission level of a pool.
-     *          Permission levels: private (0), function-level (1), pool-level (2), public (3)
-     *  @param  poolManager     Address of the pool manager.
-     *  @return permissionLevel Permission level of the pool.
-     */
-    function poolPermissions(address poolManager) external view returns (uint256 permissionLevel);
 
 }

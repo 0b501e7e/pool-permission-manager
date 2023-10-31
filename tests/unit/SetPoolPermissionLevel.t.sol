@@ -60,16 +60,16 @@ contract SetPoolPermissionLevelTests is TestBase {
         vm.prank(poolDelegate);
         ppm.setPoolPermissionLevel(poolManager, newPermissionLevel);
 
-        assertEq(ppm.poolPermissions(poolManager), oldPermissionLevel == 3 ? oldPermissionLevel : newPermissionLevel);
+        assertEq(ppm.permissionLevels(poolManager), oldPermissionLevel == 3 ? oldPermissionLevel : newPermissionLevel);
     }
 
     function _setPoolPermissionLevel_withActor(address actor) internal {
-        assertEq(ppm.poolPermissions(poolManager), 0);
+        assertEq(ppm.permissionLevels(poolManager), 0);
 
         vm.prank(actor);
         ppm.setPoolPermissionLevel(poolManager, 1);
 
-        assertEq(ppm.poolPermissions(poolManager), 1);
+        assertEq(ppm.permissionLevels(poolManager), 1);
     }
 
 }
