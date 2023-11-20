@@ -251,7 +251,6 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
         uint256 poolBitmap = poolBitmaps[poolManager_][functionId_];
 
         // Always deny if the pool bitmap has not been set.
-        // @AUDIT: Do we also need to check if the lender bitmap is zero?
         if (poolBitmap == 0) return false;
 
         // Allow only if the bitmaps match.
