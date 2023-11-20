@@ -248,13 +248,10 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
         // Ignore the function identifier if using pool-level bitmaps.
         if (permissionLevel_ == POOL_LEVEL) functionId_ = bytes32(0);
 
-        uint256 poolBitmap = poolBitmaps[poolManager_][functionId_];
-
-        // Always deny if the pool bitmap has not been set.
-        if (poolBitmap == 0) return false;
+        uint256 poolBitmap_ = poolBitmaps[poolManager_][functionId_];
 
         // Allow only if the bitmaps match.
-        hasPermission_ = (poolBitmap & lenderBitmaps[lender_]) == poolBitmap;
+        hasPermission_ = (poolBitmap_ & lenderBitmaps[lender_]) == poolBitmap_;
     }
 
 }

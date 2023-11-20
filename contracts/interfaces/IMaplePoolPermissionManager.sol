@@ -119,6 +119,8 @@ interface IMaplePoolPermissionManager is IMaplePoolPermissionManagerStorage, INo
     /**
      *  @dev    Sets the permission level of a pool.
      *          Permission levels: private (0), function-level (1), pool-level (2), public (3)
+     *          NOTE: Bitmaps must be set before setting the permission level to function-level (1) or pool-level (2).
+     *                Otherwise, the pool will be permissionless by default to un-set lenders.
      *  @param  poolManager     Address of the pool manager.
      *  @param  permissionLevel Pool permission level.
      */

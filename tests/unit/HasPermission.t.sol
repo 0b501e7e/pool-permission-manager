@@ -137,15 +137,6 @@ contract HasPermissionTests is TestBase {
         assertTrue(hasPermission);
     }
 
-    function test_hasPermission_functionLevel_zeroPoolBitmap() external {
-        vm.prank(poolDelegate);
-        ppm.setPoolPermissionLevel(poolManager, 1);
-
-        bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
-
-        assertFalse(hasPermission);
-    }
-
     function test_hasPermission_functionLevel_zeroLenderBitmap() external {
         vm.prank(poolDelegate);
         ppm.setPoolPermissionLevel(poolManager, 1);
@@ -159,6 +150,16 @@ contract HasPermissionTests is TestBase {
         bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
 
         assertFalse(hasPermission);
+    }
+
+    function test_hasPermission_functionLevel_zeroFunctionBitmap_zeroLenderBitmap() external {
+        vm.prank(poolDelegate);
+        ppm.setPoolPermissionLevel(poolManager, 1);
+
+        // NOTE: As function bitmap has not been set, the lender has permission.
+        bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
+
+        assertTrue(hasPermission);
     }
 
     function test_hasPermission_functionLevel_mismatch() external {
@@ -266,18 +267,9 @@ contract HasPermissionTests is TestBase {
         assertTrue(hasPermission);
     }
 
-    function test_hasPermission_poolLevel_zeroPoolBitmap() external {
-        vm.prank(poolDelegate);
-        ppm.setPoolPermissionLevel(poolManager, 2);
-
-        bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
-
-        assertFalse(hasPermission);
-    }
-
     function test_hasPermission_poolLevel_zeroLenderBitmap() external {
         vm.prank(poolDelegate);
-        ppm.setPoolPermissionLevel(poolManager, 1);
+        ppm.setPoolPermissionLevel(poolManager, 2);
 
         functionIds.push(bytes32(0));
         bitmaps.push(generateBitmap([1, 2]));
@@ -288,6 +280,22 @@ contract HasPermissionTests is TestBase {
         bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
 
         assertFalse(hasPermission);
+    }
+
+    function test_hasPermission_poolLevel_zeroLenderBitmap_zeroPoolBitmap() external {
+        vm.prank(poolDelegate);
+        ppm.setPoolPermissionLevel(poolManager, 2);
+
+        functionIds.push(bytes32(0));
+        bitmaps.push(uint256(0));
+
+        vm.prank(poolDelegate);
+        ppm.setPoolBitmaps(poolManager, functionIds, bitmaps);
+
+        // NOTE: As function bitmap has not been set, the lender has permission.
+        bool hasPermission = ppm.hasPermission(poolManager, lender, functionId);
+
+        assertTrue(hasPermission);
     }
 
     function test_hasPermission_poolLevel_mismatch() external {
