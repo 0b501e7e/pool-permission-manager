@@ -55,12 +55,6 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
     /*** Modifiers                                                                                                                      ***/
     /**************************************************************************************************************************************/
 
-    modifier onlyGovernor() {
-        require(msg.sender == admin(), "PPM:NOT_GOVERNOR");
-
-        _;
-    }
-
     modifier onlyPermissionAdminOrProtocolAdmins() {
         require(
             permissionAdmins[msg.sender]                         ||

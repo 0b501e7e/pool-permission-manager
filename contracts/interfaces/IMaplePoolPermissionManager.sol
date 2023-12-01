@@ -17,7 +17,7 @@ interface IMaplePoolPermissionManager is IMaplePoolPermissionManagerStorage, INo
      *  @param lenders     List of lender addresses to set the allowlist for.
      *  @param booleans    List of boolean values.
      */
-    event LenderAllowlistSet(address poolManager, address[] lenders, bool[] booleans);
+    event LenderAllowlistSet(address indexed poolManager, address[] lenders, bool[] booleans);
 
     /**
      *  @dev   Emitted when lender bitmaps are updated.
@@ -31,7 +31,7 @@ interface IMaplePoolPermissionManager is IMaplePoolPermissionManagerStorage, INo
      *  @param account Address of the updated account.
      *  @param isAdmin `true` if the account is a permission admin, `false` if not.
      */
-    event PermissionAdminSet(address account, bool isAdmin);
+    event PermissionAdminSet(address indexed account, bool isAdmin);
 
     /**
      *  @dev   Emitted when pool bitmaps are updated.
@@ -39,14 +39,14 @@ interface IMaplePoolPermissionManager is IMaplePoolPermissionManagerStorage, INo
      *  @param functionIds List of function identifiers to set the bitmaps for.
      *  @param bitmaps     List of permission bitmaps.
      */
-    event PoolBitmapsSet(address poolManager, bytes32[] functionIds, uint256[] bitmaps);
+    event PoolBitmapsSet(address indexed poolManager, bytes32[] functionIds, uint256[] bitmaps);
 
     /**
      *  @dev   Emitted when the permission level of a pool is updated.
      *  @param poolManager     Address of the pool manager.
      *  @param permissionLevel Pool permission level.
      */
-    event PoolPermissionLevelSet(address poolManager, uint256 permissionLevel);
+    event PoolPermissionLevelSet(address indexed poolManager, uint256 permissionLevel);
 
     /**************************************************************************************************************************************/
     /*** Functions                                                                                                                      ***/
