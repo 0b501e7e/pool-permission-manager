@@ -211,6 +211,8 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
     )
         external override view returns (bool hasPermission_)
     {
+        require(lenders_.length > 0, "PPM:HP:NO_LENDERS");
+
         uint256 permissionLevel_ = permissionLevels[poolManager_];
 
         for (uint256 i; i < lenders_.length; ++i) {
