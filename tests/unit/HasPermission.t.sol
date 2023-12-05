@@ -6,6 +6,29 @@ import { TestBase } from "../utils/TestBase.sol";
 contract HasPermissionTests is TestBase {
 
     /**************************************************************************************************************************************/
+    /*** Failure Test                                                                                                                   ***/
+    /**************************************************************************************************************************************/
+
+    function test_hasPermission_multiLender_noLenders() external {
+        assertEq(lenders.length, 0);
+
+        vm.expectRevert("PPM:HP:NO_LENDERS");
+        ppm.hasPermission(poolManager, lenders, functionId);
+
+        lenders.push(lender);
+        booleans.push(true);
+
+        assertEq(lenders.length, 1);
+
+        vm.prank(poolDelegate);
+        ppm.setLenderAllowlist(poolManager, lenders, booleans);
+
+        bool hasPermission = ppm.hasPermission(poolManager, lenders, functionId);
+
+        assertTrue(hasPermission);
+    }
+
+    /**************************************************************************************************************************************/
     /*** Private Permission Level                                                                                                       ***/
     /**************************************************************************************************************************************/
 
