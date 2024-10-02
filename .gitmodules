@@ -4,3 +4,9 @@
 [submodule "modules/ntp"]
 	path = modules/ntp
 	url = git@github.com:maple-labs/non-transparent-proxy.git
+[submodule "modules/ironblocks/onchain-firewall"]
+	path = modules/ironblocks/onchain-firewall
+	url = https://github.com/ironblocks/onchain-firewall
+[submodule "modules/openzeppelin-contracts"]
+	path = modules/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts

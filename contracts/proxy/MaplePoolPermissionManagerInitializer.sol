@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.7;
 
+import {VennFirewallConsumer} from "@ironblocks/firewall-consumer/contracts/consumers/VennFirewallConsumer.sol";
 import { NonTransparentProxied } from "../../modules/ntp/contracts/NonTransparentProxied.sol";
 
 import { IMaplePoolPermissionManagerInitializer } from "../interfaces/IMaplePoolPermissionManagerInitializer.sol";
@@ -8,12 +9,13 @@ import { IMaplePoolPermissionManagerInitializer } from "../interfaces/IMaplePool
 import { MaplePoolPermissionManagerStorage } from "./MaplePoolPermissionManagerStorage.sol";
 
 contract MaplePoolPermissionManagerInitializer is
+    VennFirewallConsumer,
     IMaplePoolPermissionManagerInitializer,
     MaplePoolPermissionManagerStorage,
     NonTransparentProxied
 {
 
-    function initialize(address implementation_, address globals_) external override {
+    function initialize(address implementation_, address globals_) external override firewallProtected {
         require(msg.sender == admin(), "PPMI:I:NOT_GOVERNOR");
 
         globals = globals_;
