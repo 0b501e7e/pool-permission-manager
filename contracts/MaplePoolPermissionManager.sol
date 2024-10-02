@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.7;
 
+import {VennFirewallConsumer} from "@ironblocks/firewall-consumer/contracts/consumers/VennFirewallConsumer.sol";
 import { NonTransparentProxied } from "../modules/ntp/contracts/NonTransparentProxied.sol";
 
 import { IGlobalsLike }                from "./interfaces/Interfaces.sol";
@@ -40,7 +41,7 @@ import { MaplePoolPermissionManagerStorage } from "./proxy/MaplePoolPermissionMa
 
 */
 
-contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPermissionManagerStorage, NonTransparentProxied {
+contract MaplePoolPermissionManager is VennFirewallConsumer, IMaplePoolPermissionManager, MaplePoolPermissionManagerStorage, NonTransparentProxied {
 
     /**************************************************************************************************************************************/
     /*** Permission Levels                                                                                                              ***/
@@ -94,7 +95,7 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
     /**************************************************************************************************************************************/
 
     function setLenderBitmaps(address[] calldata lenders_,uint256[] calldata bitmaps_)
-        external override whenProtocolNotPaused onlyPermissionAdminOrProtocolAdmins
+        external override whenProtocolNotPaused onlyPermissionAdminOrProtocolAdmins firewallProtected
     {
         require(lenders_.length > 0,                "PPM:SLB:NO_LENDERS");
         require(lenders_.length == bitmaps_.length, "PPM:SLB:LENGTH_MISMATCH");
@@ -107,7 +108,7 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
     }
 
     function setPermissionAdmin(address permissionAdmin_, bool isPermissionAdmin_)
-        external override whenProtocolNotPaused onlyGovernorOrOperationalAdmin
+        external override whenProtocolNotPaused onlyGovernorOrOperationalAdmin firewallProtected
     {
         permissionAdmins[permissionAdmin_] = isPermissionAdmin_;
 
@@ -124,7 +125,7 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
         bytes32[] calldata functionIds_,
         uint256[] calldata poolBitmaps_
     )
-        external override whenProtocolNotPaused onlyPoolDelegateOrProtocolAdmins(poolManager_)
+        external override whenProtocolNotPaused onlyPoolDelegateOrProtocolAdmins(poolManager_) firewallProtected
     {
         require(permissionLevels[poolManager_] != PUBLIC,   "PPM:CP:PUBLIC_POOL");
         require(permissionLevel_ <= PUBLIC,                 "PPM:CP:INVALID_LEVEL");
@@ -146,7 +147,7 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
         address[] calldata lenders_,
         bool[]    calldata booleans_
     )
-        external override whenProtocolNotPaused onlyPoolDelegateOrProtocolAdmins(poolManager_)
+        external override whenProtocolNotPaused onlyPoolDelegateOrProtocolAdmins(poolManager_) firewallProtected
     {
         require(lenders_.length > 0,                 "PPM:SLA:NO_LENDERS");
         require(lenders_.length == booleans_.length, "PPM:SLA:LENGTH_MISMATCH");
@@ -163,7 +164,7 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
         bytes32[] calldata functionIds_,
         uint256[] calldata bitmaps_
     )
-        external override whenProtocolNotPaused onlyPoolDelegateOrProtocolAdmins(poolManager_)
+        external override whenProtocolNotPaused onlyPoolDelegateOrProtocolAdmins(poolManager_) firewallProtected
     {
         require(functionIds_.length > 0,                "PPM:SPB:NO_FUNCTIONS");
         require(functionIds_.length == bitmaps_.length, "PPM:SPB:LENGTH_MISMATCH");
@@ -179,7 +180,7 @@ contract MaplePoolPermissionManager is IMaplePoolPermissionManager, MaplePoolPer
         address poolManager_,
         uint256 permissionLevel_
     )
-        external override whenProtocolNotPaused onlyPoolDelegateOrProtocolAdmins(poolManager_)
+        external override whenProtocolNotPaused onlyPoolDelegateOrProtocolAdmins(poolManager_) firewallProtected
     {
         require(permissionLevels[poolManager_] != PUBLIC, "PPM:SPPL:PUBLIC_POOL");
         require(permissionLevel_ <= PUBLIC,               "PPM:SPPL:INVALID_LEVEL");
